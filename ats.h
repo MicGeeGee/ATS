@@ -4,6 +4,7 @@
 #include <iostream>
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
+#include <opencv2/ml.hpp>
 
 
 using namespace std;
@@ -16,6 +17,11 @@ namespace ats
 	class ats_frame : public Mat
 	{
 	public:
+
+		static list<hole> y_list;
+		static list<hole> n_list;
+		static list<hole> test_list;
+
 		ats_frame(const Mat& RGB_img);
 		ats_frame(const string& img_path);
 
@@ -98,8 +104,9 @@ namespace ats
 
 			int assess_ft()const
 			{
-				int cir_param=(get_val(10)+0.0)/10*0.2;
-				int contrast_param=1000*(get_val(5)+0.0)/get_val(2);
+
+				int cir_param=(get_val(8)+0.0)/10*0.2;
+				int contrast_param=1000/(get_val(4)+1);
 					
 				return cir_param+contrast_param;
 			}

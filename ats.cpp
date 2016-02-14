@@ -2,6 +2,10 @@
 
 namespace ats
 {
+	list<hole> ats_frame::y_list=list<hole>();
+	list<hole> ats_frame::n_list=list<hole>();
+	list<hole> ats_frame::test_list=list<hole>();
+
 	ats_frame::ats_frame(const Mat& RGB_img):Mat(convert_to_gray_img(RGB_img))
 	{
 		this->origin_img=RGB_img;
@@ -216,26 +220,15 @@ namespace ats
 					continue;
 				
 
-				//h.m_ft.calc_ft(*this,h.get_contour());
-				/*if(h.get_index()==2354)
-				{
-					std::cout<<h.get_index()<<" : "<<h.get_m_ft(*this);
-					std::cout<<endl;
-				}
-				*/
-
-				std::cout<<h.get_index()<<" : "<<h.m_ft<<" , "<<h.assess_m_ft();
-				std::cout<<endl;
-
-				if(h.assess_m_ft()>100)
-					continue;
-				/*
-				if(h.get_m_ft(*this,10)>500)
-					continue;
-				if(h.get_m_ft(*this,2)<3*h.get_m_ft(*this,5)/2)
-					continue;
-					*/
 				
+				//std::cout<<h.get_index()<<" : "<<h.m_ft<<" , "<<h.assess_m_ft();
+				//std::cout<<endl;
+
+				//if(h.assess_m_ft()>300)
+					//continue;
+				
+				
+
 				
 				std::list<hole>::iterator it;
 				bool is_new=true;
@@ -254,25 +247,36 @@ namespace ats
 					
 			}
 		}
-		std::cout<<"end"<<endl;
+		
 		//manual feature filter
-		/*
+		
 		std::list<hole>::iterator it;
-		for(it=hole_set.begin();it!=hole_set.end();)
+		int k=0;
+		for(it=hole_set.begin();it!=hole_set.end();k++)
 		{
-			it->m_ft.calc_ft(*this,it->get_contour());
-			cout<<it->m_ft;
-			cout<<endl;
+			//cout<<it->m_ft;
+			//cout<<endl;
 
-			if(it->m_ft.get_val(10)>200)
+			if(it->assess_m_ft()>300)
+			{		
+//				if(it->assess_m_ft()>=600)
+				if(k<hole_set.size()/2)
+					n_list.push_back(*it);
+				else
+					test_list.push_back(*it);
+
+
 				it=hole_set.erase(it);
-					
+			}
 			else
 				it++;
 		}
-		*/
 
-	
+
+		for(it=hole_set.begin();it!=hole_set.end();it++)
+			y_list.push_back(*it);
+
+		std::cout<<"end"<<endl;
 	}
 	void ats_frame::show(double zoom_scale)
 	{
@@ -341,7 +345,7 @@ namespace ats
 
 	int hole::index_generator=0;
 
-	hole::manual_ft::manual_ft(const ats_frame& src_frame,const vector<Point>& src_contour):Mat(1,10,CV_32SC1)
+	hole::manual_ft::manual_ft(const ats_frame& src_frame,const vector<Point>& src_contour):Mat(1,8,CV_32SC1)
 	{
 		this->calc_ft(src_frame,src_contour);
 	}
@@ -356,54 +360,88 @@ namespace ats
 	void hole::manual_ft::calc_ft(const ats_frame& src_frame,const vector<Point>& src_contour)
 	{
 		
+		//[con_brgtnss_mid,body_brgtnss_mid,
+		//con_grad_mid,con_brgtnss_mid/(body_brgtnss_mid+1),
+		//con_s,body_s,
+		//con_grad_s,poly_norm]
+
 		this->is_loaded=true;
 
-		vector<int> contour_brgtnss_arr;//min mid max 1 2 3
-		vector<int> body_brghtnss_arr;//min mid max 4 5 6
-		vector<int> contour_grad_arr;//min mid max 7 8 9
-		f_point poly_param(0,0);//length 10
+		vector<int> contour_brgtnss_arr;
+		vector<int> body_brghtnss_arr;
+		vector<int> contour_grad_arr;
+		f_point poly_param(0,0);//length 8
 
 		Rect rect =boundingRect(src_contour);
 		int ave_brgtnss=0;
+		int ave_body_brgtnss=0;
 		for(int i=0;i<rect.width;i++)
 			for(int j=0;j<rect.height;j++)
 			{
 				int val=src_frame.get_brgtnss(rect.x+i,rect.y+j);
 				ave_brgtnss+=val;
 				if(i>=rect.width/4&&i<=rect.width*3/4&&j>=rect.height/4&&j<=rect.height*3/4)
+				{
 					body_brghtnss_arr.push_back(val);
+					ave_body_brgtnss+=val;
+				}
 			}
 		ave_brgtnss/=rect.width*rect.height;
+		ave_body_brgtnss/=rect.width*rect.height/4;
 
 
+		int ave_contour_brgtnss=0;
+		int ave_contour_grad=0;
 		for(int i=0;i<src_contour.size();i++)
 		{
 			contour_brgtnss_arr.push_back(src_frame.get_brgtnss(src_contour[i]));	
+			ave_contour_brgtnss+=contour_brgtnss_arr.back();
+
 			contour_grad_arr.push_back(std::abs(src_frame.get_grad(src_contour[i])));
-			
+			ave_contour_grad+=contour_grad_arr.back();
 			
 
 			poly_param+=this->normalize_vector(src_frame.get_grad_x(src_contour[i]),src_frame.get_grad_y(src_contour[i]));
-			
 		}
+		ave_contour_brgtnss/=src_contour.size();
+		ave_contour_grad/=src_contour.size();
+
+		int body_brgtnss_variance=0;
+		for(int i=rect.width/4;i<rect.width*3/4;i++)
+			for(int j=rect.height/4;j<rect.height*3/4;j++)
+				body_brgtnss_variance+=(src_frame.get_brgtnss(rect.x+i,rect.y+j)-ave_body_brgtnss)*(src_frame.get_brgtnss(rect.x+i,rect.y+j)-ave_body_brgtnss);
+		body_brgtnss_variance/=rect.width*rect.height/4;
+		body_brgtnss_variance=sqrt(body_brgtnss_variance);
+
+		
+		int con_brgtnss_variance=0;
+		int con_grad_variance=0;
+		for(int i=0;i<src_contour.size();i++)
+		{
+			con_brgtnss_variance+=(src_frame.get_brgtnss(src_contour[i])-ave_contour_brgtnss)*(src_frame.get_brgtnss(src_contour[i])-ave_contour_brgtnss);
+			con_grad_variance+=(src_frame.get_grad(src_contour[i])-ave_contour_grad)*(src_frame.get_grad(src_contour[i])-ave_contour_grad);
+		}		
+		con_brgtnss_variance/=src_contour.size();
+		con_brgtnss_variance=sqrt(con_brgtnss_variance);
+		con_grad_variance/=src_contour.size();
+		con_grad_variance=sqrt(con_grad_variance);
+				
 		std::sort(contour_brgtnss_arr.begin(),contour_brgtnss_arr.end());
 		std::sort(body_brghtnss_arr.begin(),body_brghtnss_arr.end());
 		std::sort(contour_grad_arr.begin(),contour_grad_arr.end());
 
-		set_val(1,contour_brgtnss_arr.front()*1000/ave_brgtnss);
-		set_val(2,contour_brgtnss_arr[contour_brgtnss_arr.size()/2]*1000/ave_brgtnss);
-		set_val(3,contour_brgtnss_arr.back()*1000/ave_brgtnss);
-			
-		set_val(4,body_brghtnss_arr.front()*1000/ave_brgtnss);
-		set_val(5,body_brghtnss_arr[contour_brgtnss_arr.size()/2]*1000/ave_brgtnss);
-		set_val(6,body_brghtnss_arr.back()*1000/ave_brgtnss);
-			
-		set_val(7,contour_grad_arr.front());
-		set_val(8,contour_grad_arr[contour_brgtnss_arr.size()/2]);
-		set_val(9,contour_grad_arr.back());
+		set_val(1,contour_brgtnss_arr[contour_brgtnss_arr.size()/2]*1000/ave_brgtnss);
+		set_val(2,body_brghtnss_arr[contour_brgtnss_arr.size()/2]*1000/ave_brgtnss);
+		set_val(3,contour_grad_arr[contour_brgtnss_arr.size()/2]);
+		set_val(4,contour_brgtnss_arr[contour_brgtnss_arr.size()/2]/(body_brghtnss_arr[contour_brgtnss_arr.size()/2]+1));
+
+		set_val(5,con_brgtnss_variance);
+		set_val(6,body_brgtnss_variance);
 		
-		set_val(10,(poly_param.x*poly_param.x+poly_param.y*poly_param.y)*10);
-			
+
+		set_val(7,con_grad_variance);
+		set_val(8,(poly_param.x*poly_param.x+poly_param.y*poly_param.y)*10);
+
 	}
 	int hole::manual_ft::get_val(int dim_i)const
 	{
