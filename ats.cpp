@@ -2,9 +2,11 @@
 
 namespace ats
 {
-	list<hole> ats_frame::y_list=list<hole>();
-	list<hole> ats_frame::n_list=list<hole>();
-	list<hole> ats_frame::test_list=list<hole>();
+	
+	list<Mat> ats_frame::training_data=list<Mat>();
+	list<int> ats_frame::labels=list<int>();
+	list<Mat> ats_frame::test_data=list<Mat>();
+
 
 	ats_frame::ats_frame(const Mat& RGB_img):Mat(convert_to_gray_img(RGB_img))
 	{
@@ -254,17 +256,21 @@ namespace ats
 		int k=0;
 		for(it=hole_set.begin();it!=hole_set.end();k++)
 		{
-			//cout<<it->m_ft;
-			//cout<<endl;
+			cout<<it->get_index()<<": "<<it->m_ft;
+			cout<<endl;
 
-			if(it->assess_m_ft()>300)
+			//if(it->assess_m_ft()>300)
+			if(ats::ats_svm::predict<int>(it->m_ft)==-1)
 			{		
-//				if(it->assess_m_ft()>=600)
+			/*
 				if(k<hole_set.size()/2)
-					n_list.push_back(*it);
+				{
+					training_data.push_back(it->m_ft);
+					labels.push_back(-1);
+				}
 				else
-					test_list.push_back(*it);
-
+					test_data.push_back(it->m_ft);
+					*/
 
 				it=hole_set.erase(it);
 			}
@@ -272,9 +278,13 @@ namespace ats
 				it++;
 		}
 
-
+		/*
 		for(it=hole_set.begin();it!=hole_set.end();it++)
-			y_list.push_back(*it);
+		{
+			training_data.push_back(it->m_ft);
+			labels.push_back(1);
+		}
+		*/
 
 		std::cout<<"end"<<endl;
 	}
@@ -347,6 +357,7 @@ namespace ats
 
 	hole::manual_ft::manual_ft(const ats_frame& src_frame,const vector<Point>& src_contour):Mat(1,8,CV_32SC1)
 	{
+		
 		this->calc_ft(src_frame,src_contour);
 	}
 	hole::manual_ft::manual_ft(const manual_ft& ft):Mat(ft)
@@ -572,5 +583,9 @@ namespace ats
 	{
 		area=contourArea(contour);
 	}
+
+	Ptr<cv::ml::SVM> ats_svm::classifier=ml::SVM::create();
+	bool ats_svm::is_trained=false;
+	Mat ats_svm::support_vectors=Mat();
 
 }

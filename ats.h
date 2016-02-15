@@ -18,9 +18,9 @@ namespace ats
 	{
 	public:
 
-		static list<hole> y_list;
-		static list<hole> n_list;
-		static list<hole> test_list;
+		static list<Mat> training_data;
+		static list<int> labels;
+		static list<Mat> test_data;
 
 		ats_frame(const Mat& RGB_img);
 		ats_frame(const string& img_path);
@@ -112,6 +112,9 @@ namespace ats
 			}
 
 		private:
+			ats_frame* p_frame;
+			vector<Point>* p_contour;
+
 			struct f_point
 			{
 				float x;
@@ -167,5 +170,178 @@ namespace ats
 		void update_area();
 	};
 	
+	class ats_svm
+	{
+	public:
+		
+
+		static void load(const string& file_name)
+		{
+			classifier=Algorithm::load<ml::SVM>(file_name);
+			is_trained=true;
+		}
+
+		static void save(const string& file_name)
+		{
+			if(is_trained)
+				classifier->save(file_name);
+			else
+			{
+				cout<<"Error in saving: it has not been trained."<<endl;
+				return;
+			}
+		}
+		static Mat get_suprt_vecs()
+		{
+			return support_vectors;
+		}
+
+		template<typename _type> 
+		static int predict(const Mat& vec)
+		{
+			if(is_trained)
+			{
+				Mat dst;
+				param_convert<_type>(vec,dst);
+
+				Mat res(1, 1, CV_32F);
+				classifier->predict(dst,res);
+				return res.at<float>(0,0);
+			}
+			else
+			{
+				cout<<"Error in predicting: it has not been trained."<<endl;
+				return 0;
+			}
+		}
+		static void predict(const Mat& vecs,Mat& res)
+		{
+			res=Mat(vecs.rows, 1, CV_32F);
+
+			if(is_trained)
+				classifier->predict(vecs,res);
+			else
+			{
+				cout<<"Error in predicting: it has not been trained."<<endl;
+				res=Mat::zeros(vecs.rows,1,CV_32F);
+				return;
+			}
+		}
+
+		template<typename _type> 
+		static Mat predict(const list<Mat>& test_data_list)
+		{
+			if(test_data_list.empty())
+			{
+				cout<<"Error in predicting: test data is empty."<<endl;
+				return Mat();
+			}
+			int num=test_data_list.size();
+			int n_dim=test_data_list.front().cols;
+
+			Mat test_data(num,n_dim,CV_32FC1);
+
+			list<Mat>::const_iterator it=test_data_list.begin();
+			int k=0;
+
+			for(;it!=test_data_list.end();it++,k++)
+			{	
+				for(int i=0;i<n_dim;i++)
+					test_data.at<float>(k,i)=it->at<_type>(0,i);
+			}
+			Mat res;
+			predict(test_data,res);
+			return res;
+		}
+
+		static void train(const Mat& training_data,const Mat& labels)
+		{
+			classifier->setType(ml::SVM::Types::C_SVC);
+			classifier->setKernel(ml::SVM::KernelTypes::RBF);
+			classifier->setGamma(20);  // for poly/rbf/sigmoid
+			classifier->setC(7);       // for CV_classifier_C_SVC, CV_classifier_EPS_SVR and CV_classifier_NU_SVR
+			classifier->setTermCriteria(TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 1000, 1E-6));
+			classifier->train(training_data, ml::SampleTypes::ROW_SAMPLE, labels);
+
+			is_trained=true;
+			support_vectors = classifier->getSupportVectors();
+		}
+		
+		template<typename _type> 
+		static void train(const list<Mat>& training_data_list,const list<int>& label_list)
+		{
+			if(training_data_list.empty())
+			{
+				cout<<"Error in training: training data is empty."<<endl;
+				return;
+			}
+			int num=training_data_list.size();
+			int n_dim=training_data_list.front().cols;
+
+			Mat training_data(num,n_dim,CV_32FC1);
+			Mat labels(num, 1, CV_32SC1);
+
+			list<Mat>::const_iterator t_it=training_data_list.begin();
+			list<int>::const_iterator l_it=label_list.begin();
+
+			int k=0;
+			for(;t_it!=training_data_list.end();t_it++,l_it++,k++)
+			{	
+				for(int i=0;i<n_dim;i++)
+					training_data.at<float>(k,i)=t_it->at<_type>(0,i);
+				
+				labels.at<int>(k,0)=*l_it;
+			}
+			train(training_data,labels);
+		}
+		
+		
+	private:
+		template<typename _type> 
+		static void param_convert(const Mat& src,Mat& dst)
+		{
+			if(src.empty())
+			{
+				cout<<"Error in converting: source mat is emtpy."<<endl;
+				return;
+			}
+			
+			int num=src.rows;
+			int n_dim=src.cols;
+
+			dst=Mat(num,n_dim,CV_32FC1);
+
+			for(int i=0;i<num;i++)
+				for(int j=0;j<n_dim;j++)
+					dst.at<float>(i,j)=src.at<_type>(i,j);
+
+			
+		}
+		template<typename _type> 
+		static void param_convert(const list<Mat>& src,Mat& dst)
+		{
+			if(src.empty())
+			{
+				cout<<"Error in converting: source mat is emtpy."<<endl;
+				return;
+			}
+			list<Mat>::const_iterator it=src.begin();
+			int num=src.size();
+			int n_dim=src.front().cols;
+
+			dst=Mat(num,n_dim,CV_32FC1);
+
+			int k=0;
+			for(;it!=src.end();it++,k++)
+				for(int i=0;i<n_dim;i++)
+					dst.at<float>(k,i)=it->at<_type>(k,i);
+		}
+
+
+		static Ptr<cv::ml::SVM> classifier;
+		static bool is_trained;
+		static Mat support_vectors;
+	};
+
 	
 }
