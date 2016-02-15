@@ -1,16 +1,51 @@
-﻿生成启动时间为 2016/2/14 22:57:55。
+﻿生成启动时间为 2016/2/15 21:00:28。
      1>项目“E:\OPENCV_WORKSPACE\restart_version\ats_restart\ats_restart\ats_restart.vcxproj”在节点 2 上(Build 个目标)。
      1>ClCompile:
-         E:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt main.cpp
+         E:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt ats.cpp main.cpp
+         ats.cpp
+     1>g:\opencv3\opencv\build\include\opencv2\core\mat.hpp(1965): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+     1>g:\opencv3\opencv\build\include\opencv2\core\persistence.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+     1>g:\opencv3\opencv\build\include\opencv2\core\utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.h(108): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(41): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(79): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(86): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 e:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(93): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 e:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(210): warning C4018: “<”: 有符号/无符号不匹配
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(319): warning C4018: “<”: 有符号/无符号不匹配
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(327): warning C4018: “<”: 有符号/无符号不匹配
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(406): warning C4018: “<”: 有符号/无符号不匹配
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(425): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(430): warning C4018: “<”: 有符号/无符号不匹配
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(436): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(438): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(454): warning C4244: “参数”: 从“float”转换到“int”，可能丢失数据
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(475): warning C4244: “初始化”: 从“double”转换到“float”，可能丢失数据
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(520): warning C4018: “<”: 有符号/无符号不匹配
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(523): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(545): warning C4018: “<”: 有符号/无符号不匹配
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(576): warning C4018: “<”: 有符号/无符号不匹配
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(584): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.h(209): warning C4244: “return”: 从“float”转换到“int”，可能丢失数据
+                 e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(263): 参见对正在编译的函数 模板 实例化“int ats::ats_svm::predict<int>(const cv::Mat &)”的引用
+     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.h(316): warning C4244: “=”: 从“const int”转换到“float”，可能丢失数据
+                 e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.h(205): 参见对正在编译的函数 模板 实例化“void ats::ats_svm::param_convert<_type>(const cv::Mat &,cv::Mat &)”的引用
+                 with
+                 [
+                     _type=int
+                 ]
+                 e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.cpp(263): 参见对正在编译的函数 模板 实例化“int ats::ats_svm::predict<int>(const cv::Mat &)”的引用
+         正在生成代码...
+         正在编译...
          main.cpp
      1>g:\opencv3\opencv\build\include\opencv2\core\mat.hpp(1965): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
      1>g:\opencv3\opencv\build\include\opencv2\core\persistence.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
      1>g:\opencv3\opencv\build\include\opencv2\core\utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
      1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\ats.h(108): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
      1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\main.cpp(17): warning C4244: “=”: 从“float”转换到“int”，可能丢失数据
-     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\main.cpp(66): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
-     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\main.cpp(69): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
-     1>e:\opencv_workspace\restart_version\ats_restart\ats_restart\main.cpp(81): warning C4244: “=”: 从“int”转换到“float”，可能丢失数据
+         正在生成代码...
        Link:
          E:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"E:\OPENCV_WORKSPACE\restart_version\ats_restart\Debug\ats_restart.exe" /INCREMENTAL /NOLOGO opencv_ts300d.lib opencv_world300d.lib IlmImfd.lib libjasperd.lib libjpegd.lib libpngd.lib libtiffd.lib libwebpd.lib opencv_calib3d300d.lib opencv_core300d.lib opencv_features2d300d.lib opencv_flann300d.lib opencv_hal300d.lib opencv_highgui300d.lib opencv_imgcodecs300d.lib opencv_imgproc300d.lib opencv_ml300d.lib opencv_objdetect300d.lib opencv_photo300d.lib opencv_shape300d.lib opencv_stitching300d.lib opencv_superres300d.lib opencv_video300d.lib opencv_videoio300d.lib opencv_videostab300d.lib zlibd.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"E:\OPENCV_WORKSPACE\restart_version\ats_restart\Debug\ats_restart.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"E:\OPENCV_WORKSPACE\restart_version\ats_restart\Debug\ats_restart.lib" /MACHINE:X86 Debug\ats.obj
          Debug\main.obj
@@ -19,4 +54,4 @@
 
 生成成功。
 
-已用时间 00:00:03.99
+已用时间 00:00:25.64
