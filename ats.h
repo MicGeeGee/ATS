@@ -96,24 +96,43 @@ namespace ats
 		class manual_ft : public Mat
 		{
 		public:
-			manual_ft(const ats_frame& src_frame,const vector<Point>& src_contour);
+			manual_ft(const ats_frame&  frame,const vector<Point>& contour);
 			manual_ft(const manual_ft& ft);
 
-			
-			int get_val(int dim_i)const;
-
-			int assess_ft()const
+			Mat get_val(const ats_frame&  frame,const vector<Point>& contour)
 			{
+				if(is_loaded)
+					return *this;
+				else
+				{
+					calc_ft(frame,contour);
+					return *this;
+				}
+			}
+			
+			int get_val(const ats_frame&  frame,const vector<Point>& contour,int dim_i);
 
-				int cir_param=(get_val(8)+0.0)/10*0.2;
-				int contrast_param=1000/(get_val(4)+1);
+			int assess_ft(const ats_frame&  frame,const vector<Point>& contour)
+			{
+				if(is_loaded)
+				{
+					int cir_param=(get_val(frame,contour,8)+0.0)/10*0.2;
+					int contrast_param=1000/(get_val(frame,contour,4)+1);
 					
-				return cir_param+contrast_param;
+					return cir_param+contrast_param;
+				}
+				else
+				{
+					calc_ft(frame,contour);
+					int cir_param=(get_val(frame,contour,8)+0.0)/10*0.2;
+					int contrast_param=1000/(get_val(frame,contour,4)+1);
+					
+					return cir_param+contrast_param;
+				}
 			}
 
 		private:
-			ats_frame* p_frame;
-			vector<Point>* p_contour;
+			
 
 			struct f_point
 			{
@@ -125,25 +144,30 @@ namespace ats
 			};
 			
 			bool is_loaded;
-			void calc_ft(const ats_frame& src_frame,const vector<Point>& src_contour);
+			void calc_ft(const ats_frame&  frame,const vector<Point>& contour);
 
 			f_point normalize_vector(int x,int y);
 			void set_val(int dim_i,int val);
-		}m_ft;
+		};
 
 		hole(const ats_frame& frame,const vector<Point>& contour);
 		hole(const hole& h);
 	
 		
-		int get_m_ft(int dim_i)const
+		int get_m_ft(int dim_i)
 		{
-			return this->m_ft.get_val(dim_i);
+			return this->m_ft.get_val(*p_frame,this->contour,dim_i);
 		}
-		int assess_m_ft()const
+		int assess_m_ft()
 		{
-			return this->m_ft.assess_ft();
+			return this->m_ft.assess_ft(*p_frame,this->contour);
 		}
 
+		Mat get_m_ft()
+		{
+
+			return this->m_ft.get_val(*p_frame,contour);
+		}
 
 		int get_grad_mean()const;
 		int get_area()const;
@@ -152,10 +176,14 @@ namespace ats
 
 		static bool same_pos(const hole& h1,const hole& h2);
 
-		void merge_spe(const ats_frame& frame,const hole& h);
+		void merge_spe(hole& h);
 		int get_index()const;
 
 	private:
+		const ats_frame* p_frame;
+
+		manual_ft m_ft;
+
 		int index;
 		static int index_generator;
 		int generate_index();
@@ -166,7 +194,7 @@ namespace ats
 	
 		static int dis_sq(const Point& p1,const Point& p2);
 		void calc_gp();
-		void push_back(const ats_frame& frame,const Point& p);
+		void push_back(const Point& p);
 		void update_area();
 	};
 	
