@@ -18,9 +18,7 @@ namespace ats
 	{
 	public:
 
-		static list<Mat> training_data;
-		static list<int> labels;
-		static list<Mat> test_data;
+		
 
 		ats_frame(const Mat& RGB_img);
 		ats_frame(const string& img_path);
@@ -45,6 +43,11 @@ namespace ats
 		int get_grad_x(const Point& p)const;
 		int get_grad_y(const Point& p)const;
 
+		uchar mat_at(const Point& p)const;
+		list<hole> get_hole_set()const
+		{
+			return hole_set;
+		}
 
 	private:
 		
@@ -73,7 +76,7 @@ namespace ats
 		void label_hole(const hole& h,const Scalar& color);
 		void label_hole(const hole& h,const Scalar& color,int num);
 
-		uchar mat_at(const Point& p);
+		
 
 		void morphology_filter(Mat& img,Mat& dst,int morph_operator,int morph_elem,int morph_size);
 
@@ -110,24 +113,24 @@ namespace ats
 				}
 			}
 			
-			int get_val(const ats_frame&  frame,const vector<Point>& contour,int dim_i);
+			float get_val(const ats_frame&  frame,const vector<Point>& contour,int dim_i);
 
 			int assess_ft(const ats_frame&  frame,const vector<Point>& contour)
 			{
 				if(is_loaded)
 				{
-					int cir_param=(get_val(frame,contour,8)+0.0)/10*0.2;
-					int contrast_param=1000/(get_val(frame,contour,4)+1);
-					
-					return cir_param+contrast_param;
+					int cir_param=get_val(frame,contour,2)*100;
+					int body_contrast_param=100*get_val(frame,contour,1);
+					int bg_contrast_param=100*get_val(frame,contour,3);
+					return cir_param+body_contrast_param+bg_contrast_param;
 				}
 				else
 				{
 					calc_ft(frame,contour);
-					int cir_param=(get_val(frame,contour,8)+0.0)/10*0.2;
-					int contrast_param=1000/(get_val(frame,contour,4)+1);
-					
-					return cir_param+contrast_param;
+					int cir_param=get_val(frame,contour,2)*100;
+					int body_contrast_param=100*get_val(frame,contour,1);
+					int bg_contrast_param=100*get_val(frame,contour,3);
+					return cir_param+body_contrast_param+bg_contrast_param;
 				}
 			}
 
@@ -146,15 +149,15 @@ namespace ats
 			bool is_loaded;
 			void calc_ft(const ats_frame&  frame,const vector<Point>& contour);
 
-			f_point normalize_vector(int x,int y);
-			void set_val(int dim_i,int val);
+			f_point normalize_vector(float x,float y);
+			void set_val(int dim_i,float val);
 		};
 
 		hole(const ats_frame& frame,const vector<Point>& contour);
 		hole(const hole& h);
 	
 		
-		int get_m_ft(int dim_i)
+		float get_m_ft(int dim_i)
 		{
 			return this->m_ft.get_val(*p_frame,this->contour,dim_i);
 		}
@@ -201,7 +204,9 @@ namespace ats
 	class ats_svm
 	{
 	public:
-		
+		static list<Mat> training_data;
+		static list<int> labels;
+		static list<Mat> test_data;
 
 		static void load(const string& file_name)
 		{
@@ -285,7 +290,9 @@ namespace ats
 		static void train(const Mat& training_data,const Mat& labels)
 		{
 			classifier->setType(ml::SVM::Types::C_SVC);
-			classifier->setKernel(ml::SVM::KernelTypes::RBF);
+			//classifier->setKernel(ml::SVM::KernelTypes::RBF);
+			classifier->setKernel(ml::SVM::KernelTypes::LINEAR);
+
 			classifier->setGamma(20);  // for poly/rbf/sigmoid
 			classifier->setC(7);       // for CV_classifier_C_SVC, CV_classifier_EPS_SVR and CV_classifier_NU_SVR
 			classifier->setTermCriteria(TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 1000, 1E-6));
@@ -322,6 +329,7 @@ namespace ats
 			}
 			train(training_data,labels);
 		}
+		
 		
 		
 	private:
