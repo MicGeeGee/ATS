@@ -10,15 +10,22 @@ namespace ats
 
 	ats_frame::ats_frame(const Mat& RGB_img):Mat(convert_to_gray_img(RGB_img))
 	{
+		hole::index_generator_clear();
+
 		this->origin_img=RGB_img;
 		calc_gradient(*this,grad_val,grad_x,grad_y);
 		calc_mid_brgtnss();
+		is_holes_detected=false;
+
 	}
 	ats_frame::ats_frame(const string& img_path):Mat(imread(img_path,0))
 	{
+		hole::index_generator_clear();
+
 		origin_img=imread(img_path);
 		calc_gradient(*this,grad_val,grad_x,grad_y);
 		calc_mid_brgtnss();
+		is_holes_detected=false;
 	}
 
 	ats_frame::ats_frame(const ats_frame& frame): Mat(frame)
@@ -201,7 +208,7 @@ namespace ats
 		//GaussianBlur(*this,*this,Size(5,5),0,0);
 		this->morphology_filter(*this,*this,0,2,2);
 		
-		for(int i=thre_min;i<=mid_brgtnss;i+=10)
+		for(int i=thre_min;i<=mid_brgtnss;i+=20)
 		{
 			Mat thre_img;
 			vector<vector<Point> > contour_container;
@@ -222,10 +229,17 @@ namespace ats
 				if(h.get_area()>area_ub||h.get_area()<area_lb)
 					continue;
 				//bounding rectangle filter
-				if(!bounding_rect_filter(boundingRect(contour_container[j]),h.get_gp()))
-					continue;
-				
+				//if(!bounding_rect_filter(boundingRect(contour_container[j]),h.get_gp()))
+					//continue;
 
+				//cout<<h.get_index()<<": "<<h.get_m_ft()<<", "<<h.assess_m_ft();
+				//cout<<endl;
+				//if(h.assess_m_ft()>100)
+					//continue;
+				//if(h.get_m_ft(3)>0.2)
+					//continue;
+				if(ats::ats_svm::predict<float>(h.get_m_ft())==-1)
+					continue;
 
 				//std::cout<<h.get_index()<<" : "<<h.m_ft<<" , "<<h.assess_m_ft();
 				//std::cout<<endl;
@@ -243,9 +257,6 @@ namespace ats
 					k++;
 					if(hole::same_pos(h,*it))
 					{	
-						if(i==20&&j==4&&k==2)
-							cout<<"aaaa"<<endl;
-
 						it->merge_spe(h);
 						is_new=false;
 					}
@@ -258,52 +269,12 @@ namespace ats
 			}
 		}
 		
+		this->is_holes_detected=true;
+		this->calc_mid_dis();
+		cout<<"The end."<<endl;
 		
-		//return;
 		
-		//manual feature filter
 		
-		std::list<hole>::iterator it;
-		int k=0;
-		for(it=hole_set.begin();it!=hole_set.end();k++)
-		{
-			cout<<it->get_index()<<": "<<it->get_m_ft()<<", "<<it->assess_m_ft();
-				cout<<endl;
-			
-
-			//if(it->assess_m_ft()>200)
-			if(ats::ats_svm::predict<float>(it->get_m_ft())==-1)
-			{		
-				/*
-				if(k<hole_set.size()/2)
-				{
-					training_data.push_back(it->get_m_ft());
-					labels.push_back(-1);
-				}
-				else
-					test_data.push_back(it->get_m_ft());
-			*/
-					
-			
-				it=hole_set.erase(it);
-			}
-			else
-			{
-			
-				
-				it++;
-			}
-		}
-
-/*		
-		for(it=hole_set.begin();it!=hole_set.end();it++)
-		{
-			training_data.push_back(it->get_m_ft());
-			labels.push_back(1);
-		}
-		
-		*/
-		std::cout<<"end"<<endl;
 	}
 	void ats_frame::show(double zoom_scale)
 	{
@@ -483,9 +454,9 @@ namespace ats
 		return index_generator++;
 	}
 
-	int hole::get_grad_mean()const
+	int hole::get_grad_mid()const
 	{
-		return grad_mean;
+		return grad_mid;
 	}
 	int hole::get_area()const
 	{
@@ -506,30 +477,35 @@ namespace ats
 		return dis_sq(h1.gp,h2.gp)<(h1.area<h2.area?h2.area:h1.area);
 	}
 
-	hole::hole(const ats_frame& frame,const vector<Point>& contour):m_ft(frame,contour)
+	hole::hole(const ats_frame& frame,const vector<Point>& contour):m_ft(frame,contour),s_ft()
 	{
 		this->p_frame=&frame;
 		this->contour=contour;
 		calc_gp();
-				
-		grad_mean=0;
+		
 		for(int i=0;i<contour.size();i++)
-			grad_mean+=frame.at<uchar>(contour[i]);
-		grad_mean/=contour.size();
+			con_grad_arr.push_back(frame.get_grad(contour[i]));
+		std::sort(con_grad_arr.begin(),con_grad_arr.end());
+		grad_mid=con_grad_arr[con_grad_arr.size()/2];
+		
 		area=contourArea(contour);
 		index=generate_index();
+
+
 	} 
-	hole::hole(const hole& h):m_ft(h.m_ft)
+	hole::hole(const hole& h):m_ft(h.m_ft),s_ft(h.s_ft)
 	{
 		
 
 		gp=h.gp;
 		contour=h.contour;
-		grad_mean=h.grad_mean;
+		
 		area=h.area;
 		index=h.index;
 
 		p_frame=h.p_frame;
+		grad_mid=h.grad_mid;
+		con_grad_arr=h.con_grad_arr;
 	}
 	
 
@@ -541,14 +517,16 @@ namespace ats
 				*this=hole(h);
 			return;
 		}
-
+		
 		for(int i=0;i<h.contour.size();i++)
-			if(p_frame->get_grad(h.contour[i])>this->grad_mean)
-				push_back(h.contour[i]);
-		update_area();
+			if(p_frame->get_grad(h.contour[i])>this->grad_mid)
+				push_back(h.contour[i],i==(h.contour.size()-1));
+				
+			
+		
 	}
 
-	void hole::push_back(const Point& p)
+	void hole::push_back(const Point& p,bool is_last)
 	{
 		Point pos;
 		pos.x=gp.x*contour.size();
@@ -559,11 +537,18 @@ namespace ats
 		gp.x=pos.x/(contour.size()+1);
 		gp.y=pos.y/(contour.size()+1);
 		
-		grad_mean*=contour.size();
-		grad_mean+=p_frame->get_grad(p);
-		grad_mean/=contour.size()+1;
 
+		con_grad_arr.push_back(p_frame->get_grad(p));
+		
 		contour.push_back(p);
+
+		if(is_last)
+		{
+			area=contourArea(contour);
+			std::sort(con_grad_arr.begin(),con_grad_arr.end());
+			grad_mid=con_grad_arr[con_grad_arr.size()/2];
+		}
+
 	}
 	
 	int hole::dis_sq(const Point& p1,const Point& p2)
@@ -579,13 +564,17 @@ namespace ats
 		gp.y/=contour.size();
 	}
 
-	void hole::update_area()
-	{
-		area=contourArea(contour);
-	}
+	
 
 	Ptr<cv::ml::SVM> ats_svm::classifier=ml::SVM::create();
 	bool ats_svm::is_trained=false;
 	Mat ats_svm::support_vectors=Mat();
 
+	const ats_frame* holes_matching::current_frame=NULL;
+	const ats_frame* holes_matching::last_frame=NULL;
+
+	bool holes_matching::is_l_loaded=false;
+	bool holes_matching::is_c_loaded=false;
+
+	Mat holes_matching::cost_m;
 }

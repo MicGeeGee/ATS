@@ -2,6 +2,7 @@
 #include <list>
 #include <cmath>
 #include <iostream>
+#include <cstdio>
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include <opencv2/ml.hpp>
@@ -49,14 +50,66 @@ namespace ats
 			return hole_set;
 		}
 
+		int get_dis(const hole& h1,const hole& h2)const
+		{
+			int index1=h1.get_index();
+			int index2=h2.get_index();
+
+			return dis_mat.at<int>(index_map.find(index1)->second,index_map.find(index2)->second);
+		}
+
+		int get_mid_dis()const
+		{
+			return mid_dis;
+		}
+
 	private:
 		
+		int mid_dis;
+
+		Mat dis_mat;
+
 		int mid_brgtnss;
+
+		map<int,int> index_map;
+
 		Mat origin_img;
 	
 		Mat grad_val;
 		Mat grad_x;
 		Mat grad_y;
+
+		void calc_mid_dis()
+		{
+			int dis_mat_i=0;
+			dis_mat=Mat::zeros(hole_set.size(),hole_set.size(),CV_32S);
+
+			vector<int> dis_arr;
+			list<hole>::iterator it1;
+			list<hole>::iterator it2;
+			for(it1=hole_set.begin();it1!=hole_set.end();it1++)
+				for(it2=hole_set.begin();it2!=hole_set.end();it2++)
+				{
+					if(index_map.find(it1->get_index())==index_map.end())
+						index_map[it1->get_index()]=dis_mat_i++;
+					if(index_map.find(it2->get_index())==index_map.end())
+						index_map[it2->get_index()]=dis_mat_i++;
+					
+
+
+					dis_arr.push_back(calc_dis(it1->get_gp(),it2->get_gp()));
+					dis_mat.at<int>(index_map[it1->get_index()],index_map[it2->get_index()])=dis_arr.front();
+					
+				}
+			mid_dis=dis_arr[dis_arr.size()/2];	
+		}
+
+		int calc_dis(const Point& a,const Point& b)
+		{
+			return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+		}
+
+		bool is_holes_detected;
 
 		std::list<hole> hole_set;
 
@@ -88,14 +141,72 @@ namespace ats
 	{
 	public:
 		
-		
-
-
-
-		class shape_ft : public Mat
+		class shape_ft
 		{
+		public:
+			shape_ft()
+			{
+				is_loaded=false;
+				memset(bins,0,60*sizeof(int));
+			}
+			shape_ft(const shape_ft& ft)
+			{
+				this->is_loaded=ft.is_loaded;
+				if(is_loaded)
+				{
+					for(int i=0;i<60;i++)
+					this->bins[i]=ft.bins[i];
+				}
+				else
+					memset(bins,0,60*sizeof(int));
+			}
+			void calc_ft(const ats_frame& frame,const hole& h)
+			{
+				int mid_dis=frame.get_mid_dis();
+
+				list<hole> hole_set=frame.get_hole_set();
+				list<hole>::iterator it;
+				for(it=hole_set.begin();it!=hole_set.end();it++)
+				{
+					if(it->get_index!=h.get_index())
+					{
+						int rho=frame.get_dis(*it,h);
+						float theta=atan((it->get_gp().y-h.get_gp().y)/(it->get_gp().x-h.get_gp().x));
+						int k=(calc_bin_rho(rho)-1)*12+calc_bin_theta(theta,mid_dis);
+						bins[k]++;
+					}
+					
+				}
+				is_loaded=true;
+			}
+			int get_val(const ats_frame& frame, const hole& h,int k)
+			{
+				if(is_loaded)
+					return bins[k];
+				else
+				{
+					calc_ft(frame,h);
+					return bins[k];
+				}
+			
+			}
+		private:
+			int bins[60];
+			bool is_loaded;
+
+			int calc_bin_rho(float theta)
+			{
+				return theta?(theta>0?theta/(3.14/6):3.14-theta/(3.14/6)):1;
+			}
+			int calc_bin_theta(int rho,int mid_dis)
+			{
+				return rho?log(16*rho/mid_dis)/log(2)+1:1;
+			}
+
 
 		};
+
+
 		class manual_ft : public Mat
 		{
 		public:
@@ -121,7 +232,7 @@ namespace ats
 				{
 					int cir_param=get_val(frame,contour,2)*100;
 					int body_contrast_param=100*get_val(frame,contour,1);
-					int bg_contrast_param=100*get_val(frame,contour,3);
+					int bg_contrast_param=150*get_val(frame,contour,3);
 					return cir_param+body_contrast_param+bg_contrast_param;
 				}
 				else
@@ -129,7 +240,7 @@ namespace ats
 					calc_ft(frame,contour);
 					int cir_param=get_val(frame,contour,2)*100;
 					int body_contrast_param=100*get_val(frame,contour,1);
-					int bg_contrast_param=100*get_val(frame,contour,3);
+					int bg_contrast_param=150*get_val(frame,contour,3);
 					return cir_param+body_contrast_param+bg_contrast_param;
 				}
 			}
@@ -165,14 +276,20 @@ namespace ats
 		{
 			return this->m_ft.assess_ft(*p_frame,this->contour);
 		}
-
 		Mat get_m_ft()
 		{
 
 			return this->m_ft.get_val(*p_frame,contour);
 		}
 
-		int get_grad_mean()const;
+
+		int get_s_ft(int k)const
+		{
+			return s_ft.get_val(*p_frame,*this,k);
+		}
+
+
+		int get_grad_mid()const;
 		int get_area()const;
 		Point get_gp()const;
 		vector<Point> get_contour()const;
@@ -181,24 +298,31 @@ namespace ats
 
 		void merge_spe(hole& h);
 		int get_index()const;
-
+		static void index_generator_clear()
+		{
+			index_generator=0;
+		};
 	private:
 		const ats_frame* p_frame;
 
 		manual_ft m_ft;
-
+		shape_ft s_ft;
 		int index;
 		static int index_generator;
 		int generate_index();
+		
 		Point gp;
 		vector<Point> contour;
-		int grad_mean;
+		
+		int grad_mid;
+		vector<int> con_grad_arr; 
+		
 		int area;
 	
 		static int dis_sq(const Point& p1,const Point& p2);
 		void calc_gp();
-		void push_back(const Point& p);
-		void update_area();
+		void push_back(const Point& p,bool is_last);
+		
 	};
 	
 	class ats_svm
@@ -207,6 +331,7 @@ namespace ats
 		static list<Mat> training_data;
 		static list<int> labels;
 		static list<Mat> test_data;
+		
 
 		static void load(const string& file_name)
 		{
@@ -224,6 +349,54 @@ namespace ats
 				return;
 			}
 		}
+		
+		static void save_data(const string& file_name)
+		{
+			FILE* fp;
+			fp=fopen(file_name.c_str(),"w");
+			list<Mat>::iterator it=training_data.begin();
+			list<int>::iterator lb_it=labels.begin();
+			for(;it!=training_data.end();it++,lb_it++)
+				fprintf(fp,"%f %f %f %d\n",it->at<float>(0,0),it->at<float>(0,1),it->at<float>(0,2),*lb_it);
+			fclose(fp);
+		}
+		static void add_data(const string& file_name)
+		{
+			FILE* fp;
+			fp=fopen(file_name.c_str(),"a");
+			list<Mat>::iterator it=training_data.begin();
+			list<int>::iterator lb_it=labels.begin();
+			for(;it!=training_data.end();it++,lb_it++)
+				fprintf(fp,"%f %f %f %d\n",it->at<float>(0,0),it->at<float>(0,1),it->at<float>(0,2),*lb_it);
+			fclose(fp);
+		}
+
+
+		static void load_data(const string& file_name)
+		{
+			FILE* fp;
+			fp=fopen(file_name.c_str(),"r");
+			float data[3];
+			int label;
+			int num;
+			while(true)
+			{
+				num=fscanf(fp,"%f%f%f%d",&data[0],&data[1],&data[2],&label);
+				if(num<4)
+					break;
+				
+				Mat data_m(1,3,CV_32F);
+				data_m.at<float>(0,0)=data[0];
+				data_m.at<float>(0,1)=data[1];
+				data_m.at<float>(0,2)=data[2];
+				training_data.push_back(data_m);
+				labels.push_back(label);
+			}
+
+
+			fclose(fp);
+		}
+		
 		static Mat get_suprt_vecs()
 		{
 			return support_vectors;
@@ -293,8 +466,8 @@ namespace ats
 			//classifier->setKernel(ml::SVM::KernelTypes::RBF);
 			classifier->setKernel(ml::SVM::KernelTypes::LINEAR);
 
-			classifier->setGamma(20);  // for poly/rbf/sigmoid
-			classifier->setC(7);       // for CV_classifier_C_SVC, CV_classifier_EPS_SVR and CV_classifier_NU_SVR
+			//classifier->setGamma(20);  // for poly/rbf/sigmoid
+			//classifier->setC(7);       // for CV_classifier_C_SVC, CV_classifier_EPS_SVR and CV_classifier_NU_SVR
 			classifier->setTermCriteria(TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 1000, 1E-6));
 			classifier->train(training_data, ml::SampleTypes::ROW_SAMPLE, labels);
 
@@ -377,6 +550,50 @@ namespace ats
 		static Ptr<cv::ml::SVM> classifier;
 		static bool is_trained;
 		static Mat support_vectors;
+	};
+
+	class holes_matching
+	{
+	public:
+		static void load_last_frame(const ats_frame* p_frame)
+		{
+			last_frame=p_frame;
+		}
+		static void load_current_frame(const ats_frame* p_frame)
+		{
+			current_frame=p_frame;
+		}
+		static int calc_matching_cost()
+		{
+			
+		
+		}
+	private:
+		static const ats_frame* last_frame;
+		static const ats_frame* current_frame;
+		static bool is_l_loaded;
+		static bool is_c_loaded;
+		
+		static void calc_cost_m()
+		{
+		
+		}
+		static Mat cost_m;
+		static float chi_sq_test(const hole& h1,const hole& h2)
+		{
+			float val=0;
+			for(int i=0;i<60;i++)
+			{
+				if((h1.get_s_ft(i)+h2.get_s_ft(i))!=0)
+					val+=(h1.get_s_ft(i)-h2.get_s_ft(i))*(h1.get_s_ft(i)-h2.get_s_ft(i))/(h1.get_s_ft(i)+h2.get_s_ft(i));
+				else
+					val+=0;
+			}
+
+			return val/2;
+		}
+		
+
 	};
 
 	

@@ -11,12 +11,14 @@ using namespace cv;
 
 namespace ats
 {
-	void console_lines(const ats_frame& frame)
+	void console_lines_1(const ats_frame& frame)
 	{
 		
 		
-		int index_y[]={9,1531,15,19,206,969,3360,1944,517,818,364,1307,832,3196,3647,3434,482,37};
-		int index_n[]={55,54,36,1051,1081,2816,1140,1828,1873};
+		//int index_y[]={9,1531,15,19,206,969,3360,1944,517,818,364,1307,832,3196,3647,3434,482,37};
+		//int index_n[]={55,54,36,1051,1081,2816,1140,1828,1873};
+		int index_y[]={3510,293,3434};
+		int index_n[]={1217,761};
 		map<int,int> map_y;
 		map<int,int> map_n;
 	
@@ -41,10 +43,19 @@ namespace ats
 			}
 		}
 
-		ats::ats_svm::train<float>(ats::ats_svm::training_data,ats::ats_svm::labels);
+		//ats::ats_svm::train<float>(ats::ats_svm::training_data,ats::ats_svm::labels);
 		//cout<<ats::ats_svm::predict<float>(ats::ats_svm::test_data);
+		//ats::ats_svm::save("svm_classifier.xml");
+
+		//ats::ats_svm::save_data("training_data.txt");
+		ats::ats_svm::add_data("training_data.txt");
+	}
+
+	void console_lines_2(const ats_frame& frame)
+	{
+		ats::ats_svm::load_data("training_data.txt");
+		ats::ats_svm::train<float>(ats::ats_svm::training_data,ats::ats_svm::labels);
 		ats::ats_svm::save("svm_classifier.xml");
-	
 	}
 }
 
@@ -53,10 +64,14 @@ namespace ats
 int main()
 {
 	
+
 	ats::ats_svm::load("svm_classifier.xml");
 
-	//ats::ats_frame frame("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\reEidted.bmp");
-	ats::ats_frame frame("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_1.jpg");
+	ats::ats_frame frame("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\reEidted.bmp");
+	//ats::ats_frame frame("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_1.jpg");
+
+	//ats::console_lines_2(frame);
+	//return 0;
 
 	frame.detect_holes();
 	frame.show();
@@ -64,7 +79,7 @@ int main()
 	frame.save_g("C:\\Users\\Administrator\\Desktop\\img\\img_g.jpg");
 	
 	
-	//ats::console_lines(frame);
+	//ats::console_lines_1(frame);
 	
 
 	waitKey();
