@@ -574,7 +574,7 @@ namespace ats
 			if(num_l<=num_c)
 			{
 				int num=num_c;
-				int inf=0;
+				float inf=0;
 				cost_m=Mat::zeros(num,num,CV_32F);
 				
 				int m=0;
@@ -611,7 +611,7 @@ namespace ats
 			for(int i=0;i<60;i++)
 			{
 				if((h1.get_s_ft(i)+h2.get_s_ft(i))!=0)
-					val+=(h1.get_s_ft(i)-h2.get_s_ft(i))*(h1.get_s_ft(i)-h2.get_s_ft(i))/(h1.get_s_ft(i)+h2.get_s_ft(i));
+					val+=(h1.get_s_ft(i)-h2.get_s_ft(i))*(h1.get_s_ft(i)-h2.get_s_ft(i))/((h1.get_s_ft(i)+h2.get_s_ft(i))+0.0);
 				else
 					val+=0;
 			}

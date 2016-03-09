@@ -86,7 +86,8 @@ int main()
 
 
 
-	//frame.save("C:\\Users\\Administrator\\Desktop\\img\\img.jpg");
+	frame_l.save("C:\\Users\\Administrator\\Desktop\\img\\img_1.jpg");
+	frame_c.save("C:\\Users\\Administrator\\Desktop\\img\\img_120.jpg");
 	//frame.save_g("C:\\Users\\Administrator\\Desktop\\img\\img_g.jpg");
 	
 	
