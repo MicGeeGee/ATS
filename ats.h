@@ -13,7 +13,11 @@ using namespace cv;
 
 namespace ats
 {
+	
 	class hole;
+	
+	
+	
 	
 	class ats_frame : public Mat
 	{
@@ -45,33 +49,31 @@ namespace ats
 		int get_grad_y(const Point& p)const;
 
 		uchar mat_at(const Point& p)const;
-		list<hole> get_hole_set()const
+		list<hole> get_hole_set()const;
+
+		int get_dis(const hole& h1,const hole& h2)const;
+
+		int get_mid_dis()const;
+		static int generate_index()
 		{
-			return hole_set;
+			return index_generator++;
 		}
 
-		int get_dis(const hole& h1,const hole& h2)const
-		{
-			int index1=h1.get_index();
-			int index2=h2.get_index();
 
-			return dis_mat.at<int>(index_map.find(index1)->second,index_map.find(index2)->second);
-		}
-
-		int get_mid_dis()const
-		{
-			return mid_dis;
-		}
+		int get_hole_num()const;
 
 	private:
 		
+		static int index_generator;
+		int index;
+
 		int mid_dis;
 
 		Mat dis_mat;
 
 		int mid_brgtnss;
 
-		map<int,int> index_map;
+		map<int,int> index_map;//index to i
 
 		Mat origin_img;
 	
@@ -79,35 +81,9 @@ namespace ats
 		Mat grad_x;
 		Mat grad_y;
 
-		void calc_mid_dis()
-		{
-			int dis_mat_i=0;
-			dis_mat=Mat::zeros(hole_set.size(),hole_set.size(),CV_32S);
+		void calc_mid_dis();
 
-			vector<int> dis_arr;
-			list<hole>::iterator it1;
-			list<hole>::iterator it2;
-			for(it1=hole_set.begin();it1!=hole_set.end();it1++)
-				for(it2=hole_set.begin();it2!=hole_set.end();it2++)
-				{
-					if(index_map.find(it1->get_index())==index_map.end())
-						index_map[it1->get_index()]=dis_mat_i++;
-					if(index_map.find(it2->get_index())==index_map.end())
-						index_map[it2->get_index()]=dis_mat_i++;
-					
-
-
-					dis_arr.push_back(calc_dis(it1->get_gp(),it2->get_gp()));
-					dis_mat.at<int>(index_map[it1->get_index()],index_map[it2->get_index()])=dis_arr.front();
-					
-				}
-			mid_dis=dis_arr[dis_arr.size()/2];	
-		}
-
-		int calc_dis(const Point& a,const Point& b)
-		{
-			return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
-		}
+		int calc_dis(const Point& a,const Point& b);
 
 		bool is_holes_detected;
 
@@ -135,8 +111,6 @@ namespace ats
 
 	};
 
-
-
 	class hole
 	{
 	public:
@@ -160,15 +134,17 @@ namespace ats
 				else
 					memset(bins,0,60*sizeof(int));
 			}
+			
 			void calc_ft(const ats_frame& frame,const hole& h)
 			{
+				
 				int mid_dis=frame.get_mid_dis();
 
 				list<hole> hole_set=frame.get_hole_set();
 				list<hole>::iterator it;
 				for(it=hole_set.begin();it!=hole_set.end();it++)
 				{
-					if(it->get_index!=h.get_index())
+					if(it->get_index()!=h.get_index())
 					{
 						int rho=frame.get_dis(*it,h);
 						float theta=atan((it->get_gp().y-h.get_gp().y)/(it->get_gp().x-h.get_gp().x));
@@ -283,7 +259,7 @@ namespace ats
 		}
 
 
-		int get_s_ft(int k)const
+		int get_s_ft(int k)
 		{
 			return s_ft.get_val(*p_frame,*this,k);
 		}
@@ -324,6 +300,8 @@ namespace ats
 		void push_back(const Point& p,bool is_last);
 		
 	};
+
+	
 	
 	class ats_svm
 	{
@@ -563,23 +541,71 @@ namespace ats
 		{
 			current_frame=p_frame;
 		}
-		static int calc_matching_cost()
+		static float calc_matching_cost()
 		{
+			calc_cost_m();
+			int a[100];
+			int b[100];
+			cout<<cost_m<<endl;
+			return hungarian<float>(cost_m,a,b);
 			
-		
 		}
 	private:
+
+		static map<int,int> result_row;
+		static map<int,int> result_col;
+
+
+
 		static const ats_frame* last_frame;
 		static const ats_frame* current_frame;
 		static bool is_l_loaded;
 		static bool is_c_loaded;
 		
-		static void calc_cost_m()
+		static bool calc_cost_m()
 		{
-		
+
+
+			list<hole> h_set_l=last_frame->get_hole_set();
+			list<hole> h_set_c=current_frame->get_hole_set();
+
+			int num_l=h_set_l.size();
+			int num_c=h_set_c.size();
+			if(num_l<=num_c)
+			{
+				int num=num_c;
+				int inf=0;
+				cost_m=Mat::zeros(num,num,CV_32F);
+				
+				int m=0;
+				int n=0;
+
+				list<hole>::iterator it_l;
+				list<hole>::iterator it_c;
+				for(it_l=h_set_l.begin(),m=0;it_l!=h_set_l.end();it_l++,m++)
+					for(it_c=h_set_c.begin(),n=0;it_c!=h_set_c.end();it_c++,n++)
+					{
+						float cost=chi_sq_test(*it_l,*it_c);
+						cost_m.at<float>(m,n)=cost;
+						cost_m.at<float>(n,m)=cost;
+						if(cost>inf)
+							inf=cost;
+					}
+				for(int i=m;i<n;i++)
+					for(int j=m;j<n;j++)
+						cost_m.at<float>(i,j)=inf*3;
+				return true;
+
+			}
+			else
+			{
+				cout<<"warning:"<<endl;
+				return false;
+			}
+
 		}
 		static Mat cost_m;
-		static float chi_sq_test(const hole& h1,const hole& h2)
+		static float chi_sq_test(hole& h1,hole& h2)
 		{
 			float val=0;
 			for(int i=0;i<60;i++)
@@ -592,6 +618,279 @@ namespace ats
 
 			return val/2;
 		}
+		
+		template<typename _type> 
+		//static float hungarian(const Mat& assigncost,map<int,int>& rowsol,map<int,int>& colsol)
+		static float hungarian(const Mat& assigncost,int* rowsol,int* colsol)
+		{
+
+		  int dim=assigncost.cols;
+		  unsigned char unassignedfound;
+		  int  i, imin, numfree = 0, prvnumfree, f, i0, k, freerow, *pred, *free;
+		  int  j, j1, j2, endofpath, last, low, up, *collist, *matches;
+		  float min, h, umin, usubmin, v2, *d, *v;
+
+		  free = new int[dim];       // list of unassigned rows.
+		  collist = new int[dim];    // list of columns to be scanned in various ways.
+		  matches = new int[dim];    // counts how many times a row could be assigned.
+		  d = new float[dim];         // 'cost-distance' in augmenting path calculation.
+		  pred = new int[dim];       // row-predecessor of column in augmenting/alternating path.
+		  v = new float[dim];
+
+		  // init how many times a row will be assigned in the column reduction.
+		  for (i = 0; i < dim; i++)  
+			matches[i] = 0;
+
+		  // COLUMN REDUCTION 
+		  for (j = dim-1; j >= 0; j--)    // reverse order gives better results.
+		  {
+			// find minimum cost over rows.
+	  
+			min =assigncost.at<_type>(0,j);
+			imin = 0;
+			for (i = 1; i < dim; i++)  
+			  if (assigncost.at<_type>(i,j) < min) 
+			  { 
+				min = assigncost.at<_type>(i,j);
+				imin = i;
+			  }
+			v[j] = min; 
+
+			if (++matches[imin] == 1) 
+			{ 
+			  // init assignment if minimum row assigned for first time.
+			  rowsol[imin] = j; 
+			  colsol[j] = imin; 
+			}
+			else
+			  colsol[j] = -1;        // row already assigned, column not assigned.
+		  }
+
+		  // REDUCTION TRANSFER
+		  for (i = 0; i < dim; i++) 
+			if (matches[i] == 0)     // fill list of unassigned 'free' rows.
+			  free[numfree++] = i;
+			else
+			  if (matches[i] == 1)   // transfer reduction from rows that are assigned once.
+			  {
+				j1 = rowsol[i]; 
+				//min = BIG;
+				min = 1e+10;
+				for (j = 0; j < dim; j++)  
+				  if (j != j1)
+					if (assigncost.at<_type>(i,j) - v[j] < min) 
+					  min = assigncost.at<_type>(i,j) - v[j];
+				v[j1] = v[j1] - min;
+			  }
+
+		  // AUGMENTING ROW REDUCTION 
+	  int loopcnt = 0;           // do-loop to be done twice.
+	  do
+	  {
+		loopcnt++;
+
+		// scan all free rows.
+		// in some cases, a free row may be replaced with another one to be scanned next.
+		k = 0; 
+		prvnumfree = numfree; 
+		numfree = 0;             // start list of rows still free after augmenting row reduction.
+		while (k < prvnumfree)
+		{
+		  i = free[k]; 
+		  k++;
+
+		  // find minimum and second minimum reduced cost over columns.
+		  umin = assigncost.at<_type>(i,0)- v[0]; 
+		  j1 = 0; 
+		  //usubmin = BIG;
+		  usubmin =1e+10;
+		  for (j = 1; j < dim; j++) 
+		  {
+			h = assigncost.at<_type>(i,j) - v[j];
+			if (h < usubmin)
+			  if (h >= umin) 
+			  { 
+				usubmin = h; 
+				j2 = j;
+			  }
+			  else 
+			  { 
+				usubmin = umin; 
+				umin = h; 
+				j2 = j1; 
+				j1 = j;
+			  }
+		  }
+
+		  i0 = colsol[j1];
+	  
+		  /* Begin modification by Yefeng Zheng 03/07/2004 */
+		  //if( umin < usubmin )
+		  if (fabs(umin-usubmin) > 1e-10) 
+		  /* End modification by Yefeng Zheng 03/07/2004 */
+
+			// change the reduction of the minimum column to increase the minimum
+			// reduced cost in the row to the subminimum.
+			v[j1] = v[j1] - (usubmin - umin);
+		  else                   // minimum and subminimum equal.
+			if (i0 >= 0)         // minimum column j1 is assigned.
+			{ 
+			  // swap columns j1 and j2, as j2 may be unassigned.
+			  j1 = j2; 
+			  i0 = colsol[j2];
+			}
+
+		  // (re-)assign i to j1, possibly de-assigning an i0.
+		  rowsol[i] = j1; 
+		  colsol[j1] = i;
+
+		  if (i0 >= 0)           // minimum column j1 assigned earlier.
+
+	/* Begin modification by Yefeng Zheng 03/07/2004 */
+			  //if( umin < usubmin )
+			  if (fabs(umin-usubmin) > 1e-10) 
+	/* End modification by Yefeng Zheng 03/07/2004 */
+          
+			  // put in current k, and go back to that k.
+			  // continue augmenting path i - j1 with i0.
+			  free[--k] = i0; 
+			else 
+			  // no further augmenting reduction possible.
+			  // store i0 in list of free rows for next phase.
+			  free[numfree++] = i0; 
+		}
+	  }
+	  while (loopcnt < 2);       // repeat once.
+
+	  // AUGMENT SOLUTION for each free row.
+	  for (f = 0; f < numfree; f++) 
+	  {
+		freerow = free[f];       // start row of augmenting path.
+
+		// Dijkstra shortest path algorithm.
+		// runs until unassigned column added to shortest path tree.
+		for (j = 0; j < dim; j++)  
+		{ 
+		
+		  d[j] = assigncost.at<_type>(freerow,j) - v[j]; 
+		  pred[j] = freerow;
+		  collist[j] = j;        // init column list.
+		}
+
+		low = 0; // columns in 0..low-1 are ready, now none.
+		up = 0;  // columns in low..up-1 are to be scanned for current minimum, now none.
+				 // columns in up..dim-1 are to be considered later to find new minimum, 
+				 // at this stage the list simply contains all columns 
+		unassignedfound = false;
+		do
+		{
+		  if (up == low)         // no more columns to be scanned for current minimum.
+		  {
+			last = low - 1; 
+
+			// scan columns for up..dim-1 to find all indices for which new minimum occurs.
+			// store these indices between low..up-1 (increasing up). 
+			min = d[collist[up++]]; 
+			for (k = up; k < dim; k++) 
+			{
+			  j = collist[k]; 
+			  h = d[j];
+			  if (h <= min)
+			  {
+				if (h < min)     // new minimum.
+				{ 
+				  up = low;      // restart list at index low.
+				  min = h;
+				}
+				// new index with same minimum, put on undex up, and extend list.
+				collist[k] = collist[up]; 
+				collist[up++] = j; 
+			  }
+			}
+
+			// check if any of the minimum columns happens to be unassigned.
+			// if so, we have an augmenting path right away.
+			for (k = low; k < up; k++) 
+			  if (colsol[collist[k]] < 0) 
+			  {
+				endofpath = collist[k];
+				unassignedfound = true;
+				break;
+			  }
+		  }
+
+		  if (!unassignedfound) 
+		  {
+			// update 'distances' between freerow and all unscanned columns, via next scanned column.
+			j1 = collist[low]; 
+			low++; 
+			i = colsol[j1]; 
+			h = assigncost.at<_type>(i,j1) - v[j1] - min;
+
+			for (k = up; k < dim; k++) 
+			{
+			  j = collist[k]; 
+			  v2 = assigncost.at<_type>(i,j) - v[j] - h;
+			  if (v2 < d[j])
+			  {
+				pred[j] = i;
+				if (v2 == min)   // new column found at same minimum value
+				  if (colsol[j] < 0) 
+				  {
+					// if unassigned, shortest augmenting path is complete.
+					endofpath = j;
+					unassignedfound = true;
+					break;
+				  }
+				  // else add to list to be scanned right away.
+				  else 
+				  { 
+					collist[k] = collist[up]; 
+					collist[up++] = j; 
+				  }
+				d[j] = v2;
+			  }
+			}
+		  } 
+		}
+		while (!unassignedfound);
+
+		// update column prices.
+		for (k = 0; k <= last; k++)  
+		{ 
+		  j1 = collist[k]; 
+		  v[j1] = v[j1] + d[j1] - min;
+		}
+
+		// reset row and column assignments along the alternating path.
+		do
+		{
+		  i = pred[endofpath]; 
+		  colsol[endofpath] = i; 
+		  j1 = endofpath; 
+		  endofpath = rowsol[i]; 
+		  rowsol[i] = j1;
+		}
+		while (i != freerow);
+	  }
+
+	  // calculate optimal cost.
+	  float lapcost = 0;
+	  for (i = 0; i < dim; i++)  
+	  {
+		j = rowsol[i];
+		lapcost = lapcost + assigncost.at<_type>(i,j); 
+	  }
+
+	  // free reserved memory.
+	  delete[] pred;
+	  delete[] free;
+	  delete[] collist;
+	  delete[] matches;
+	  delete[] d;
+	  delete[] v;
+	  return lapcost;
+	}
 		
 
 	};

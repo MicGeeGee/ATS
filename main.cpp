@@ -67,20 +67,34 @@ int main()
 
 	ats::ats_svm::load("svm_classifier.xml");
 
-	ats::ats_frame frame("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\reEidted.bmp");
-	//ats::ats_frame frame("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_1.jpg");
+//	ats::ats_frame frame("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\reEidted.bmp");
+	ats::ats_frame frame_l("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_1.jpg");
+	ats::ats_frame frame_c("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_120.jpg");
+	
+	
+//	frame.detect_holes();
+//  frame.show();
+	frame_l.detect_holes();
+	frame_l.show();
+	frame_c.detect_holes();
+	frame_c.show();
 
-	//ats::console_lines_2(frame);
-	//return 0;
+	ats::holes_matching::load_last_frame(&frame_l);
+	ats::holes_matching::load_current_frame(&frame_c);
+	
+	cout<<ats::holes_matching::calc_matching_cost()<<endl;
 
-	frame.detect_holes();
-	frame.show();
-	frame.save("C:\\Users\\Administrator\\Desktop\\img\\img.jpg");
-	frame.save_g("C:\\Users\\Administrator\\Desktop\\img\\img_g.jpg");
+
+
+	//frame.save("C:\\Users\\Administrator\\Desktop\\img\\img.jpg");
+	//frame.save_g("C:\\Users\\Administrator\\Desktop\\img\\img_g.jpg");
 	
 	
-	//ats::console_lines_1(frame);
 	
+	
+
+
+
 
 	waitKey();
 	return 0;

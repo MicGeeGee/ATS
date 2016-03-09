@@ -8,9 +8,11 @@ namespace ats
 	list<Mat> ats_svm::test_data=list<Mat>();
 
 
+	int ats_frame::index_generator;
+
 	ats_frame::ats_frame(const Mat& RGB_img):Mat(convert_to_gray_img(RGB_img))
 	{
-		hole::index_generator_clear();
+		index=ats_frame::generate_index();
 
 		this->origin_img=RGB_img;
 		calc_gradient(*this,grad_val,grad_x,grad_y);
@@ -20,7 +22,7 @@ namespace ats
 	}
 	ats_frame::ats_frame(const string& img_path):Mat(imread(img_path,0))
 	{
-		hole::index_generator_clear();
+		index=ats_frame::generate_index();
 
 		origin_img=imread(img_path);
 		calc_gradient(*this,grad_val,grad_x,grad_y);
@@ -30,6 +32,8 @@ namespace ats
 
 	ats_frame::ats_frame(const ats_frame& frame): Mat(frame)
 	{
+		index=frame.index;
+
 		origin_img=frame.origin_img;
 		grad_val=frame.grad_val;
 		grad_x=frame.grad_x;
@@ -202,9 +206,17 @@ namespace ats
 		circle(origin_img,p,r,color,-1);
 	}
 
+	int ats_frame::get_hole_num()const
+	{
+		return this->hole_set.size();
+	}
+
 
 	void ats_frame::detect_holes(int thre_min)
 	{
+
+		hole::index_generator_clear();//for different frames
+
 		//GaussianBlur(*this,*this,Size(5,5),0,0);
 		this->morphology_filter(*this,*this,0,2,2);
 		
@@ -284,12 +296,18 @@ namespace ats
 		for(it=hole_set.begin();it!=hole_set.end();it++)
 			label_hole(*it,Scalar(0, 255, 0),it->get_index());
 			
+		char label[20];
+		char label_gray[20];
+		sprintf(label,"frame_%d",this->index);
+		sprintf(label_gray,"frame_g_%d",this->index);
 
 		print_num(origin_img,hole_set.size());
 		resize_img(origin_img,dst,zoom_scale);
-		imshow("frame",dst);
-		resize_img(*this,dst,zoom_scale);
-		imshow("frame_g",dst);
+		imshow(label,dst);
+
+
+		//resize_img(*this,dst,zoom_scale);
+		//imshow(label_gray,dst);
 		
 	}
 
@@ -326,6 +344,55 @@ namespace ats
 		else
 			return this->at<uchar>(p);
 	}
+
+	list<hole> ats_frame::get_hole_set()const
+	{
+		return hole_set;
+	}
+
+	int ats_frame::get_dis(const hole& h1,const hole& h2)const
+	{
+		int index1=h1.get_index();
+		int index2=h2.get_index();
+
+		return dis_mat.at<int>(index_map.find(index1)->second,index_map.find(index2)->second);
+	}
+	int ats_frame::get_mid_dis()const
+	{
+		return mid_dis;
+	}
+	void ats_frame::calc_mid_dis()
+	{
+		int dis_mat_i=0;
+		dis_mat=Mat::zeros(hole_set.size(),hole_set.size(),CV_32S);
+
+		vector<int> dis_arr;
+		list<hole>::iterator it1;
+		list<hole>::iterator it2;
+		for(it1=hole_set.begin();it1!=hole_set.end();it1++)
+			for(it2=hole_set.begin();it2!=hole_set.end();it2++)
+			{
+				if(index_map.find(it1->get_index())==index_map.end())
+					index_map[it1->get_index()]=dis_mat_i++;
+				if(index_map.find(it2->get_index())==index_map.end())
+					index_map[it2->get_index()]=dis_mat_i++;
+					
+
+
+				dis_arr.push_back(calc_dis(it1->get_gp(),it2->get_gp()));
+				dis_mat.at<int>(index_map[it1->get_index()],index_map[it2->get_index()])=dis_arr.front();
+					
+			}
+		std::sort(dis_arr.begin(),dis_arr.end());
+
+		mid_dis=dis_arr[dis_arr.size()/2];	
+	}
+
+	int ats_frame::calc_dis(const Point& a,const Point& b)
+	{
+		return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+	}
+
 
 	void ats_frame::morphology_filter(Mat& img,Mat& dst,int morph_operator,int morph_elem,int morph_size)
 	{
@@ -577,4 +644,9 @@ namespace ats
 	bool holes_matching::is_c_loaded=false;
 
 	Mat holes_matching::cost_m;
+
+	map<int,int> holes_matching::result_row;
+	map<int,int> holes_matching::result_col;
+
+
 }
