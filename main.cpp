@@ -83,7 +83,7 @@ int main()
 	ats::holes_matching::load_current_frame(&frame_c);
 	
 	cout<<ats::holes_matching::calc_matching_cost()<<endl;
-
+	ats::holes_matching::print_result();
 
 
 	frame_l.save("C:\\Users\\Administrator\\Desktop\\img\\img_1.jpg");

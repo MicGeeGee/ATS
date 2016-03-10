@@ -14,6 +14,8 @@ namespace ats
 	{
 		index=ats_frame::generate_index();
 
+		
+
 		this->origin_img=RGB_img;
 		calc_gradient(*this,grad_val,grad_x,grad_y);
 		calc_mid_brgtnss();
@@ -32,7 +34,13 @@ namespace ats
 
 	ats_frame::ats_frame(const ats_frame& frame): Mat(frame)
 	{
+
+		max_dis=frame.max_dis;
+		dis_mat=frame.dis_mat;
+		
 		index=frame.index;
+
+		mid_brgtnss=frame.mid_brgtnss;
 
 		origin_img=frame.origin_img;
 		grad_val=frame.grad_val;
@@ -282,7 +290,7 @@ namespace ats
 		}
 		
 		this->is_holes_detected=true;
-		this->calc_mid_dis();
+		this->calc_max_dis();
 		cout<<"The end."<<endl;
 		
 		
@@ -357,16 +365,17 @@ namespace ats
 
 		return dis_mat.at<int>(index_map.find(index1)->second,index_map.find(index2)->second);
 	}
-	int ats_frame::get_mid_dis()const
+	int ats_frame::get_max_dis()const
 	{
-		return mid_dis;
+		return max_dis;
 	}
-	void ats_frame::calc_mid_dis()
+	void ats_frame::calc_max_dis()
 	{
 		int dis_mat_i=0;
 		dis_mat=Mat::zeros(hole_set.size(),hole_set.size(),CV_32S);
 
-		vector<int> dis_arr;
+		max_dis=0;
+		//vector<int> dis_arr;
 		list<hole>::iterator it1;
 		list<hole>::iterator it2;
 		for(it1=hole_set.begin();it1!=hole_set.end();it1++)
@@ -377,15 +386,18 @@ namespace ats
 				if(index_map.find(it2->get_index())==index_map.end())
 					index_map[it2->get_index()]=dis_mat_i++;
 					
+				int dis=calc_dis(it1->get_gp(),it2->get_gp());
+				if(dis>max_dis)
+					max_dis=dis;
 
-
-				dis_arr.push_back(calc_dis(it1->get_gp(),it2->get_gp()));
-				dis_mat.at<int>(index_map[it1->get_index()],index_map[it2->get_index()])=dis_arr.front();
+			//	dis_arr.push_back(calc_dis(it1->get_gp(),it2->get_gp()));
+				//dis_mat.at<int>(index_map[it1->get_index()],index_map[it2->get_index()])=dis_arr.front();
+				dis_mat.at<int>(index_map[it1->get_index()],index_map[it2->get_index()])=dis;
 					
 			}
-		std::sort(dis_arr.begin(),dis_arr.end());
+		//std::sort(dis_arr.begin(),dis_arr.end());
 
-		mid_dis=dis_arr[dis_arr.size()/2];	
+		//mid_dis=dis_arr[dis_arr.size()/2];	
 	}
 
 	int ats_frame::calc_dis(const Point& a,const Point& b)
@@ -540,6 +552,7 @@ namespace ats
 
 	bool hole::same_pos(const hole& h1,const hole& h2)
 	{
+		//return dis_sq(h1.gp,h2.gp)<(h1.area+h2.area)*1.5;
 		//return dis_sq(h1.gp,h2.gp)<(h1.area+h2.area)/2;
 		return dis_sq(h1.gp,h2.gp)<(h1.area<h2.area?h2.area:h1.area);
 	}
@@ -595,6 +608,8 @@ namespace ats
 
 	void hole::push_back(const Point& p,bool is_last)
 	{
+		//if is_last is true, then update the params
+
 		Point pos;
 		pos.x=gp.x*contour.size();
 		pos.y=gp.y*contour.size();
@@ -647,6 +662,12 @@ namespace ats
 
 	map<int,int> holes_matching::result_row;
 	map<int,int> holes_matching::result_col;
+
+	map<int,int> holes_matching::revindex_map_c;
+	map<int,int> holes_matching::revindex_map_l;
+
+	int holes_matching::row_res[100000];
+	int holes_matching::col_res[100000];
 
 
 }

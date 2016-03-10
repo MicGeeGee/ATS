@@ -53,7 +53,7 @@ namespace ats
 
 		int get_dis(const hole& h1,const hole& h2)const;
 
-		int get_mid_dis()const;
+		int get_max_dis()const;
 		static int generate_index()
 		{
 			return index_generator++;
@@ -62,12 +62,21 @@ namespace ats
 
 		int get_hole_num()const;
 
+		void merge_holes(list<hole>::iterator& p_host,list<hole>::iterator& p_guest)
+		{
+			//make *p_guest incorprated into *p_host,and then erase p_guest
+
+			p_host->incorporate(*p_guest);
+			hole_set.erase(p_guest);
+		}
+
 	private:
 		
 		static int index_generator;
 		int index;
 
-		int mid_dis;
+		//int mid_dis;
+		int max_dis;
 
 		Mat dis_mat;
 
@@ -81,7 +90,7 @@ namespace ats
 		Mat grad_x;
 		Mat grad_y;
 
-		void calc_mid_dis();
+		void calc_max_dis();
 
 		int calc_dis(const Point& a,const Point& b);
 
@@ -135,10 +144,26 @@ namespace ats
 					memset(bins,0,60*sizeof(int));
 			}
 			
+			float calc_theta(const Point& p_cen,const Point& p_h)
+			{
+				Point delta_div=p_h-p_cen;
+				if(delta_div.x>0)
+				{
+					return (-1)*atan(delta_div.y/(delta_div.x+0.0));
+				}
+				else
+				{
+					return 3.14-(-1)*atan(delta_div.y/(delta_div.x+0.0));
+				}
+
+
+			}
 			void calc_ft(const ats_frame& frame,const hole& h)
 			{
 				
-				int mid_dis=frame.get_mid_dis();
+				
+
+				int max_dis=frame.get_max_dis();
 
 				list<hole> hole_set=frame.get_hole_set();
 				list<hole>::iterator it;
@@ -147,8 +172,10 @@ namespace ats
 					if(it->get_index()!=h.get_index())
 					{
 						int rho=frame.get_dis(*it,h);
-						float theta=atan((it->get_gp().y-h.get_gp().y)/(it->get_gp().x-h.get_gp().x));
-						int k=(calc_bin_rho(rho)-1)*12+calc_bin_theta(theta,mid_dis);
+						//float theta=(-1)*atan((it->get_gp().y-h.get_gp().y)/(it->get_gp().x-h.get_gp().x));//the axis are in different directions from normal one
+						float theta=calc_theta(h.get_gp(),it->get_gp());
+				
+						int k=calc_bin_rho(rho,max_dis)*12+calc_bin_theta(theta);
 						bins[k]++;
 					}
 					
@@ -170,13 +197,14 @@ namespace ats
 			int bins[60];
 			bool is_loaded;
 
-			int calc_bin_rho(float theta)
+			int calc_bin_rho(float rho,int max_dis)
 			{
-				return theta?(theta>0?theta/(3.14/6):3.14-theta/(3.14/6)):1;
+				return rho?log(16*rho/max_dis)/log(2):0;
 			}
-			int calc_bin_theta(int rho,int mid_dis)
+			int calc_bin_theta(int theta)
 			{
-				return rho?log(16*rho/mid_dis)/log(2)+1:1;
+				return theta>=0?theta/(3.14/6):(6.28+theta)/(3.14/6);
+				
 			}
 
 
@@ -273,6 +301,13 @@ namespace ats
 		static bool same_pos(const hole& h1,const hole& h2);
 
 		void merge_spe(hole& h);
+
+		void incorporate(const hole& h)
+		{
+			for(int i=0;i<h.contour.size();i++)
+				push_back(h.contour[i],i==(h.contour.size()-1));
+		}
+
 		int get_index()const;
 		static void index_generator_clear()
 		{
@@ -544,18 +579,34 @@ namespace ats
 		static float calc_matching_cost()
 		{
 			calc_cost_m();
-			int a[100];
-			int b[100];
-			cout<<cost_m<<endl;
-			return hungarian<float>(cost_m,a,b);
 			
+			cout<<cost_m<<endl;
+			return hungarian<float>(cost_m,row_res,col_res);
+			
+		}
+		static void print_result()
+		{
+			for(int i=0;i<cost_m.rows;i++)
+				cout<<"("<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<")"<<endl;
+			for(int i=0;i<cost_m.rows;i++)
+				cout<<revindex_map_l[i]<<endl;
+
+			cout<<endl;
+			for(int i=0;i<cost_m.rows;i++)
+				cout<<revindex_map_c[i]<<endl;
 		}
 	private:
 
 		static map<int,int> result_row;
 		static map<int,int> result_col;
 
+		
 
+		static int row_res[100000];
+		static int col_res[100000];
+
+		static map<int,int> revindex_map_c;//i to index
+		static map<int,int> revindex_map_l;
 
 		static const ats_frame* last_frame;
 		static const ats_frame* current_frame;
@@ -585,15 +636,25 @@ namespace ats
 				for(it_l=h_set_l.begin(),m=0;it_l!=h_set_l.end();it_l++,m++)
 					for(it_c=h_set_c.begin(),n=0;it_c!=h_set_c.end();it_c++,n++)
 					{
+						revindex_map_l[m]=it_l->get_index();
+						revindex_map_c[n]=it_c->get_index();
+
 						float cost=chi_sq_test(*it_l,*it_c);
 						cost_m.at<float>(m,n)=cost;
-						cost_m.at<float>(n,m)=cost;
+						//cost_m.at<float>(n,m)=cost;
 						if(cost>inf)
 							inf=cost;
 					}
+
+				for(int i=m;i<n;i++)
+					for(int j=0;j<m;j++)
+						//cost_m.at<float>(i,j)=inf*10000;
+						cost_m.at<float>(i,j)=inf;
+
 				for(int i=m;i<n;i++)
 					for(int j=m;j<n;j++)
-						cost_m.at<float>(i,j)=inf*3;
+						//cost_m.at<float>(i,j)=inf*10000;
+						cost_m.at<float>(i,j)=inf;
 				return true;
 
 			}
@@ -604,7 +665,7 @@ namespace ats
 			}
 
 		}
-		static Mat cost_m;
+		static Mat cost_m;//row index for last frame, column index of current one
 		static float chi_sq_test(hole& h1,hole& h2)
 		{
 			float val=0;
