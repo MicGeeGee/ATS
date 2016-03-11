@@ -37,7 +37,9 @@ namespace ats
 
 		max_dis=frame.max_dis;
 		dis_mat=frame.dis_mat;
-		
+		index_map=frame.index_map;
+		ptr_map=frame.ptr_map;
+
 		index=frame.index;
 
 		mid_brgtnss=frame.mid_brgtnss;
@@ -291,6 +293,9 @@ namespace ats
 		
 		this->is_holes_detected=true;
 		this->calc_max_dis();
+
+		this->reorganize_frags();
+
 		cout<<"The end."<<endl;
 		
 		
@@ -353,9 +358,61 @@ namespace ats
 			return this->at<uchar>(p);
 	}
 
-	list<hole> ats_frame::get_hole_set()const
+	list<hole>& ats_frame::get_hole_set()
 	{
 		return hole_set;
+	}
+
+	void ats_frame::reorganize_frags()
+	{
+		//list<hole> h_set=hole_set;
+
+		list<hole>::iterator it1;
+		list<hole>::iterator it2;
+
+
+
+		for(it1=hole_set.begin();it1!=hole_set.end();it1++)
+			for(it2=hole_set.begin();it2!=hole_set.end();)
+			{
+				if(it1->get_index()==it2->get_index())
+				{
+					it2++;
+					continue;
+				}
+				if(calc_dis(it1->get_gp(),it2->get_gp())>(it1->get_area()+it2->get_area())*2)
+				{
+					it2++;
+					continue;
+				}
+
+				if(frag_assessment(*it1,*it2)<0.5)
+					it2=merge_holes(it1,it2);
+				else
+					it2++;
+
+			}
+	}
+
+	float ats_frame::frag_assessment(hole& h1,hole& h2)
+	{
+		list<hole>& hole_set=this->get_hole_set();
+		list<hole>::iterator it;
+
+		float theta_diff=0;
+		float rho_diff=0;
+
+		for(it=hole_set.begin();it!=hole_set.end();it++)
+		{
+			if(it->get_index()==h1.get_index()||it->get_index()==h2.get_index())
+				continue;
+			  
+			theta_diff+=std::abs(hole::shape_ft::calc_theta(h1.get_gp(),it->get_gp())-hole::shape_ft::calc_theta(h2.get_gp(),it->get_gp()))/3.14;
+			rho_diff+=std::abs(calc_dis(h1.get_gp(),it->get_gp())-calc_dis(h2.get_gp(),it->get_gp()))/(this->get_max_dis()+0.0);
+			
+		}
+
+		return theta_diff+rho_diff;
 	}
 
 	int ats_frame::get_dis(const hole& h1,const hole& h2)const
@@ -379,6 +436,8 @@ namespace ats
 		list<hole>::iterator it1;
 		list<hole>::iterator it2;
 		for(it1=hole_set.begin();it1!=hole_set.end();it1++)
+		{
+			ptr_map[it1->get_index()]=it1;
 			for(it2=hole_set.begin();it2!=hole_set.end();it2++)
 			{
 				if(index_map.find(it1->get_index())==index_map.end())
@@ -395,6 +454,7 @@ namespace ats
 				dis_mat.at<int>(index_map[it1->get_index()],index_map[it2->get_index()])=dis;
 					
 			}
+		}
 		//std::sort(dis_arr.begin(),dis_arr.end());
 
 		//mid_dis=dis_arr[dis_arr.size()/2];	
@@ -405,6 +465,17 @@ namespace ats
 		return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
 	}
 
+	list<hole>::iterator ats_frame::merge_holes(list<hole>::iterator& p_host,list<hole>::iterator& p_guest)
+	{
+		//make *p_guest incorprated into *p_host,and then erase p_guest
+
+		p_host->incorporate(*p_guest);
+		return hole_set.erase(p_guest);
+	}
+	list<hole>::iterator ats_frame::get_hole(int index)
+	{
+		return ptr_map[index];
+	}
 
 	void ats_frame::morphology_filter(Mat& img,Mat& dst,int morph_operator,int morph_elem,int morph_size)
 	{
@@ -557,7 +628,7 @@ namespace ats
 		return dis_sq(h1.gp,h2.gp)<(h1.area<h2.area?h2.area:h1.area);
 	}
 
-	hole::hole(const ats_frame& frame,const vector<Point>& contour):m_ft(frame,contour),s_ft()
+	hole::hole(ats_frame& frame,const vector<Point>& contour):m_ft(frame,contour),s_ft()
 	{
 		this->p_frame=&frame;
 		this->contour=contour;
@@ -652,8 +723,8 @@ namespace ats
 	bool ats_svm::is_trained=false;
 	Mat ats_svm::support_vectors=Mat();
 
-	const ats_frame* holes_matching::current_frame=NULL;
-	const ats_frame* holes_matching::last_frame=NULL;
+	ats_frame* holes_matching::current_frame=NULL;
+	ats_frame* holes_matching::last_frame=NULL;
 
 	bool holes_matching::is_l_loaded=false;
 	bool holes_matching::is_c_loaded=false;

@@ -11,7 +11,7 @@ using namespace cv;
 
 namespace ats
 {
-	void console_lines_1(const ats_frame& frame)
+	void console_lines_1(ats_frame& frame)
 	{
 		
 		

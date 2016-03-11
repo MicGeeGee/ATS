@@ -49,7 +49,7 @@ namespace ats
 		int get_grad_y(const Point& p)const;
 
 		uchar mat_at(const Point& p)const;
-		list<hole> get_hole_set()const;
+		list<hole>& get_hole_set();
 
 		int get_dis(const hole& h1,const hole& h2)const;
 
@@ -59,17 +59,10 @@ namespace ats
 			return index_generator++;
 		}
 
-
+		list<hole>::iterator get_hole(int index);
 		int get_hole_num()const;
 
-		void merge_holes(list<hole>::iterator& p_host,list<hole>::iterator& p_guest)
-		{
-			//make *p_guest incorprated into *p_host,and then erase p_guest
-
-			p_host->incorporate(*p_guest);
-			hole_set.erase(p_guest);
-		}
-
+		
 	private:
 		
 		static int index_generator;
@@ -84,13 +77,21 @@ namespace ats
 
 		map<int,int> index_map;//index to i
 
+		map<int,list<hole>::iterator> ptr_map;//index to ptr
+
 		Mat origin_img;
 	
 		Mat grad_val;
 		Mat grad_x;
 		Mat grad_y;
 
+		void reorganize_frags();
+
+		list<hole>::iterator merge_holes(list<hole>::iterator& p_host,list<hole>::iterator& p_guest);
+
 		void calc_max_dis();
+
+		float frag_assessment(hole& h1,hole& h2);
 
 		int calc_dis(const Point& a,const Point& b);
 
@@ -144,23 +145,9 @@ namespace ats
 					memset(bins,0,60*sizeof(int));
 			}
 			
-			float calc_theta(const Point& p_cen,const Point& p_h)
+			
+			void calc_ft(ats_frame& frame,const hole& h)
 			{
-				Point delta_div=p_h-p_cen;
-				if(delta_div.x>0)
-				{
-					return (-1)*atan(delta_div.y/(delta_div.x+0.0));
-				}
-				else
-				{
-					return 3.14-(-1)*atan(delta_div.y/(delta_div.x+0.0));
-				}
-
-
-			}
-			void calc_ft(const ats_frame& frame,const hole& h)
-			{
-				
 				
 
 				int max_dis=frame.get_max_dis();
@@ -171,18 +158,23 @@ namespace ats
 				{
 					if(it->get_index()!=h.get_index())
 					{
+						
 						int rho=frame.get_dis(*it,h);
 						//float theta=(-1)*atan((it->get_gp().y-h.get_gp().y)/(it->get_gp().x-h.get_gp().x));//the axis are in different directions from normal one
 						float theta=calc_theta(h.get_gp(),it->get_gp());
-				
-						int k=calc_bin_rho(rho,max_dis)*12+calc_bin_theta(theta);
+						int bin_rho;
+						int bin_theta;
+						bin_rho=calc_bin_rho(rho,max_dis);
+						bin_theta=calc_bin_theta(theta);
+						int k=bin_rho*12+bin_theta;
+
 						bins[k]++;
 					}
 					
 				}
 				is_loaded=true;
 			}
-			int get_val(const ats_frame& frame, const hole& h,int k)
+			int get_val(ats_frame& frame, const hole& h,int k)
 			{
 				if(is_loaded)
 					return bins[k];
@@ -193,19 +185,51 @@ namespace ats
 				}
 			
 			}
-		private:
-			int bins[60];
-			bool is_loaded;
 
-			int calc_bin_rho(float rho,int max_dis)
+			static int calc_bin(ats_frame& frame,const hole& cen_h,const hole& h)
 			{
-				return rho?log(16*rho/max_dis)/log(2):0;
+				int rho=frame.get_dis(cen_h,h);
+				int max_dis=frame.get_max_dis();
+				float theta=calc_theta(cen_h.get_gp(),h.get_gp());
+				
+				int k=calc_bin_rho(rho,max_dis)*12+calc_bin_theta(theta);
+				return k;
 			}
-			int calc_bin_theta(int theta)
+
+			static float calc_theta(const Point& p_cen,const Point& p_h)
+			{
+				Point delta_div=p_h-p_cen;
+				if(delta_div.x==0)
+					return 1.57;
+				if(delta_div.x>0)
+				{
+					return (-1)*atan(delta_div.y/(delta_div.x+0.0));
+				}
+				else
+				{
+
+					return 3.14+(-1)*atan(delta_div.y/(delta_div.x+0.0));
+					
+				}
+			}
+			static int calc_bin_rho(float rho,int max_dis)
+			{
+				if(16*rho/max_dis>1)
+					return rho?log(16*rho/max_dis)/log(2):0;
+				else
+					return 0;
+			}
+			static int calc_bin_theta(float theta)
 			{
 				return theta>=0?theta/(3.14/6):(6.28+theta)/(3.14/6);
 				
 			}
+
+		private:
+			int bins[60];
+			bool is_loaded;
+			
+
 
 
 		};
@@ -268,7 +292,7 @@ namespace ats
 			void set_val(int dim_i,float val);
 		};
 
-		hole(const ats_frame& frame,const vector<Point>& contour);
+		hole(ats_frame& frame,const vector<Point>& contour);
 		hole(const hole& h);
 	
 		
@@ -314,7 +338,7 @@ namespace ats
 			index_generator=0;
 		};
 	private:
-		const ats_frame* p_frame;
+		ats_frame* p_frame;
 
 		manual_ft m_ft;
 		shape_ft s_ft;
@@ -568,11 +592,11 @@ namespace ats
 	class holes_matching
 	{
 	public:
-		static void load_last_frame(const ats_frame* p_frame)
+		static void load_last_frame(ats_frame* p_frame)
 		{
 			last_frame=p_frame;
 		}
-		static void load_current_frame(const ats_frame* p_frame)
+		static void load_current_frame(ats_frame* p_frame)
 		{
 			current_frame=p_frame;
 		}
@@ -581,16 +605,51 @@ namespace ats
 			calc_cost_m();
 			
 			cout<<cost_m<<endl;
-			return hungarian<float>(cost_m,row_res,col_res);
+			float res=hungarian<float>(cost_m,row_res,col_res);
+
+			/*
+			//for those holes matching dumppy holes
+			list<hole>::iterator it;
+			list<hole>& cur_hole_set=current_frame->get_hole_set();
+			for(int i=last_frame->get_hole_num();i<cost_m.cols;i++)
+			{
+				for(it=cur_hole_set.begin();it!=cur_hole_set.end();it++)
+				{	
+					if(frag_assessment(*current_frame,*(current_frame->get_hole(revindex_map_c[row_res[i]])),*it)<1)
+					{
+						
+					}
+				}
+			}
+			*/
+			return res;
 			
+
+
 		}
+
+
+		static bool judge_overlapping(ats_frame& frame,hole& h1,hole& h2)
+		{
+			float res=frag_assessment(frame,h1,h2);
+			//if(res<0.5)
+			//{
+				cout<<"("<<h1.get_index()<<","<<h2.get_index()<<")"<<":"<<res<<endl;
+				return true;
+			//}
+			//else
+				//return false;
+		}
+
 		static void print_result()
 		{
+			//matching result:
 			for(int i=0;i<cost_m.rows;i++)
 				cout<<"("<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<")"<<endl;
+
+			//index map:
 			for(int i=0;i<cost_m.rows;i++)
 				cout<<revindex_map_l[i]<<endl;
-
 			cout<<endl;
 			for(int i=0;i<cost_m.rows;i++)
 				cout<<revindex_map_c[i]<<endl;
@@ -608,17 +667,19 @@ namespace ats
 		static map<int,int> revindex_map_c;//i to index
 		static map<int,int> revindex_map_l;
 
-		static const ats_frame* last_frame;
-		static const ats_frame* current_frame;
+		static ats_frame* last_frame;
+		static ats_frame* current_frame;
 		static bool is_l_loaded;
 		static bool is_c_loaded;
 		
+		
+
 		static bool calc_cost_m()
 		{
 
 
-			list<hole> h_set_l=last_frame->get_hole_set();
-			list<hole> h_set_c=current_frame->get_hole_set();
+			list<hole>& h_set_l=last_frame->get_hole_set();
+			list<hole>& h_set_c=current_frame->get_hole_set();
 
 			int num_l=h_set_l.size();
 			int num_c=h_set_c.size();
@@ -646,11 +707,15 @@ namespace ats
 							inf=cost;
 					}
 
+				//left part of the reminder:
 				for(int i=m;i<n;i++)
 					for(int j=0;j<m;j++)
+					{
+						revindex_map_l[i]=-1;
 						//cost_m.at<float>(i,j)=inf*10000;
 						cost_m.at<float>(i,j)=inf;
-
+					}
+				//right part of the reminder:
 				for(int i=m;i<n;i++)
 					for(int j=m;j<n;j++)
 						//cost_m.at<float>(i,j)=inf*10000;
@@ -680,6 +745,12 @@ namespace ats
 			return val/2;
 		}
 		
+		
+		static int calc_dis(const Point& a,const Point& b)
+		{
+			return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+		}
+
 		template<typename _type> 
 		//static float hungarian(const Mat& assigncost,map<int,int>& rowsol,map<int,int>& colsol)
 		static float hungarian(const Mat& assigncost,int* rowsol,int* colsol)
