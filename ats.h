@@ -1,5 +1,6 @@
 #include <vector>
 #include <list>
+#include <set>
 #include <cmath>
 #include <iostream>
 #include <cstdio>
@@ -62,7 +63,10 @@ namespace ats
 		list<hole>::iterator get_hole(int index);
 		int get_hole_num()const;
 
-		
+		void enroll_overlapping(int index);
+		void update_hole(int index,const hole& h);
+
+
 	private:
 		
 		static int index_generator;
@@ -71,11 +75,16 @@ namespace ats
 		//int mid_dis;
 		int max_dis;
 
+		int overlapping_num;
+
+		set<int> overlapping_list; //index list of overlapping holes
+
+		
 		Mat dis_mat;
 
 		int mid_brgtnss;
 
-		map<int,int> index_map;//index to i
+		map<int,int> index_map;//index to i in dis_mat
 
 		map<int,list<hole>::iterator> ptr_map;//index to ptr
 
@@ -103,6 +112,8 @@ namespace ats
 	
 		void print_num(Mat& img,int num);
 		void print_num(Mat& img,const Point& p,int num);
+		void print_num(Mat& img,int num1,int num2);
+
 		Mat convert_to_gray_img(const Mat& img);
 
 		int find_contours(const Mat& binary_img,vector<vector<Point> >& contour_container);
@@ -337,6 +348,23 @@ namespace ats
 		{
 			index_generator=0;
 		};
+
+		void enroll_overlapping()
+		{
+			overlapping_num++;
+		}
+		
+		int get_overlapping_num()const
+		{
+			return overlapping_num;
+		}
+		void update(const hole& h)
+		{
+			if(h.area>this->area)
+				this->area=h.area;
+			this->overlapping_num=h.overlapping_num;
+		}
+
 	private:
 		ats_frame* p_frame;
 
@@ -354,6 +382,8 @@ namespace ats
 		
 		int area;
 	
+		int overlapping_num;
+
 		static int dis_sq(const Point& p1,const Point& p2);
 		void calc_gp();
 		void push_back(const Point& p,bool is_last);
@@ -604,9 +634,9 @@ namespace ats
 		{
 			calc_cost_m();
 			
-			cout<<cost_m<<endl;
+			
 			float res=hungarian<float>(cost_m,row_res,col_res);
-
+			
 			/*
 			//for those holes matching dumppy holes
 			list<hole>::iterator it;
@@ -622,35 +652,33 @@ namespace ats
 				}
 			}
 			*/
+
+
+			handle_matching_res();
+
+
+			//return total matching cost
 			return res;
-			
-
-
 		}
 
 
-		static bool judge_overlapping(ats_frame& frame,hole& h1,hole& h2)
-		{
-			float res=frag_assessment(frame,h1,h2);
-			//if(res<0.5)
-			//{
-				cout<<"("<<h1.get_index()<<","<<h2.get_index()<<")"<<":"<<res<<endl;
-				return true;
-			//}
-			//else
-				//return false;
-		}
+		
 
 		static void print_result()
 		{
+
 			//matching result:
+			cout<<"matching pairs(last,current):"<<endl;
 			for(int i=0;i<cost_m.rows;i++)
 				cout<<"("<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<")"<<endl;
+			
+			cout<<"cost matrix:"<<endl<<cost_m<<endl;
 
 			//index map:
+			cout<<"row index:"<<endl;
 			for(int i=0;i<cost_m.rows;i++)
 				cout<<revindex_map_l[i]<<endl;
-			cout<<endl;
+			cout<<"column index:"<<endl;
 			for(int i=0;i<cost_m.rows;i++)
 				cout<<revindex_map_c[i]<<endl;
 		}
@@ -660,6 +688,32 @@ namespace ats
 		static map<int,int> result_col;
 
 		
+		static void handle_matching_res()
+		{
+			for(int i=0;i<cost_m.rows;i++)
+			{
+				if(revindex_map_l[i]==-1)
+					continue;
+
+				//first, update all the overlapping numbers of the current frame to the ones of the previous frame
+				current_frame->update_hole(revindex_map_c[row_res[i]],*(last_frame->get_hole(revindex_map_l[i])));
+				//then judge overlappings and make increment
+				if(judge_overlapping(*(last_frame->get_hole(revindex_map_l[i])),*(current_frame->get_hole(revindex_map_c[row_res[i]]))))
+				{
+					cout<<"new overlapping location(pre_index,cur_index:pre_area->cur_area):"<<endl;
+					cout<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<":"
+					<<last_frame->get_hole(revindex_map_l[i])->get_area()<<"->"<<(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area()<<endl;
+					current_frame->enroll_overlapping(revindex_map_c[row_res[i]]);
+				}
+
+			}
+		}
+
+		static bool judge_overlapping(const hole& pre_h,const hole& cur_h)
+		{
+			return cur_h.get_area()>pre_h.get_area()*1.5;
+		}
+
 
 		static int row_res[100000];
 		static int col_res[100000];

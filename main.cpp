@@ -75,25 +75,24 @@ int main()
 //	frame.detect_holes();
 //  frame.show();
 	frame_l.detect_holes();
-	frame_l.show();
+	
 	frame_c.detect_holes();
-	frame_c.show();
+	
 
 	ats::holes_matching::load_last_frame(&frame_l);
 	ats::holes_matching::load_current_frame(&frame_c);
 	
-	cout<<ats::holes_matching::calc_matching_cost()<<endl;
+	ats::holes_matching::calc_matching_cost();
 	ats::holes_matching::print_result();
 
 
-	frame_l.save("C:\\Users\\Administrator\\Desktop\\img\\img_1.jpg");
-	frame_c.save("C:\\Users\\Administrator\\Desktop\\img\\img_120.jpg");
+	
 	//frame.save_g("C:\\Users\\Administrator\\Desktop\\img\\img_g.jpg");
 	
-	
-	
-	
-
+	frame_l.show();
+	frame_c.show();
+	frame_l.save("C:\\Users\\Administrator\\Desktop\\img\\img_1.jpg");
+	frame_c.save("C:\\Users\\Administrator\\Desktop\\img\\img_120.jpg");
 
 
 

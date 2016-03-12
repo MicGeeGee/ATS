@@ -14,7 +14,7 @@ namespace ats
 	{
 		index=ats_frame::generate_index();
 
-		
+		overlapping_num=0;
 
 		this->origin_img=RGB_img;
 		calc_gradient(*this,grad_val,grad_x,grad_y);
@@ -26,6 +26,8 @@ namespace ats
 	{
 		index=ats_frame::generate_index();
 
+		overlapping_num=0;
+
 		origin_img=imread(img_path);
 		calc_gradient(*this,grad_val,grad_x,grad_y);
 		calc_mid_brgtnss();
@@ -34,6 +36,10 @@ namespace ats
 
 	ats_frame::ats_frame(const ats_frame& frame): Mat(frame)
 	{
+
+		overlapping_num=frame.overlapping_num;
+
+		overlapping_list=frame.overlapping_list;
 
 		max_dis=frame.max_dis;
 		dis_mat=frame.dis_mat;
@@ -101,6 +107,14 @@ namespace ats
 		cv::resize(img,dst,refS);
 	}
 	
+	void ats_frame::print_num(Mat& img,int num1,int num2)
+	{
+		char num_char_array[10];
+		sprintf(num_char_array,"%d+%d",num1,num2);
+		string num_str= num_char_array;
+		putText( img, num_str, Point( img.rows/2,img.cols/4),CV_FONT_HERSHEY_COMPLEX, 1, Scalar(255, 0, 0) );
+	}
+
 	void ats_frame::print_num(Mat& img,int num)
 	{
 		char num_char_array[10];
@@ -221,6 +235,25 @@ namespace ats
 		return this->hole_set.size();
 	}
 
+	void ats_frame::enroll_overlapping(int index)
+	{
+		if(overlapping_list.find(index)==overlapping_list.end())
+			overlapping_list.insert(index);
+
+		overlapping_num++;
+		ptr_map[index]->enroll_overlapping();
+			
+	}
+	void ats_frame::update_hole(int index,const hole& h)
+	{
+		if(overlapping_list.find(index)==overlapping_list.end()&&h.get_overlapping_num()>0)
+			overlapping_list.insert(index);
+		int incre_num=(h.get_overlapping_num()-ptr_map[index]->get_overlapping_num());
+		overlapping_num+=incre_num;
+		ptr_map[index]->update(h);
+			
+	}
+
 
 	void ats_frame::detect_holes(int thre_min)
 	{
@@ -314,7 +347,7 @@ namespace ats
 		sprintf(label,"frame_%d",this->index);
 		sprintf(label_gray,"frame_g_%d",this->index);
 
-		print_num(origin_img,hole_set.size());
+		print_num(origin_img,hole_set.size(),this->overlapping_num);
 		resize_img(origin_img,dst,zoom_scale);
 		imshow(label,dst);
 
@@ -375,6 +408,12 @@ namespace ats
 		for(it1=hole_set.begin();it1!=hole_set.end();it1++)
 			for(it2=hole_set.begin();it2!=hole_set.end();)
 			{
+				/*
+				if(frag_assessment(*it1,*it2)<1)
+				{
+					cout<<"("<<it1->get_index()<<","<<it2->get_index()<<"):"<<frag_assessment(*it1,*it2)<<endl;
+				}
+				*/
 				if(it1->get_index()==it2->get_index())
 				{
 					it2++;
@@ -385,6 +424,13 @@ namespace ats
 					it2++;
 					continue;
 				}
+
+				
+				
+				
+				
+
+				//cout<<"("<<it1->get_index()<<","<<it2->get_index()<<"):"<<frag_assessment(*it1,*it2)<<endl;
 
 				if(frag_assessment(*it1,*it2)<0.5)
 					it2=merge_holes(it1,it2);
@@ -407,7 +453,7 @@ namespace ats
 			if(it->get_index()==h1.get_index()||it->get_index()==h2.get_index())
 				continue;
 			  
-			theta_diff+=std::abs(hole::shape_ft::calc_theta(h1.get_gp(),it->get_gp())-hole::shape_ft::calc_theta(h2.get_gp(),it->get_gp()))/3.14;
+			theta_diff+=std::abs(hole::shape_ft::calc_theta(h1.get_gp(),it->get_gp())-hole::shape_ft::calc_theta(h2.get_gp(),it->get_gp()))/1.57;
 			rho_diff+=std::abs(calc_dis(h1.get_gp(),it->get_gp())-calc_dis(h2.get_gp(),it->get_gp()))/(this->get_max_dis()+0.0);
 			
 		}
@@ -630,6 +676,8 @@ namespace ats
 
 	hole::hole(ats_frame& frame,const vector<Point>& contour):m_ft(frame,contour),s_ft()
 	{
+		overlapping_num=0;
+
 		this->p_frame=&frame;
 		this->contour=contour;
 		calc_gp();
@@ -646,7 +694,7 @@ namespace ats
 	} 
 	hole::hole(const hole& h):m_ft(h.m_ft),s_ft(h.s_ft)
 	{
-		
+		overlapping_num=h.overlapping_num;
 
 		gp=h.gp;
 		contour=h.contour;
