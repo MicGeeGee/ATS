@@ -2,6 +2,7 @@
 #include <list>
 #include <set>
 #include <cmath>
+#include <ctime>
 #include <iostream>
 #include <cstdio>
 #include "opencv2/imgproc/imgproc.hpp"
@@ -77,11 +78,17 @@ namespace ats
 		void enroll_overlapping(int index);
 		void update_hole(int index,const hole& h);
 
+		int get_index()
+		{
+			return index;
+		}
 
 	private:
 		
 		static int index_generator;
 		int index;
+
+		bool is_labeled;
 
 		//int mid_dis;
 		int max_dis;
@@ -104,6 +111,8 @@ namespace ats
 		Mat grad_val;
 		Mat grad_x;
 		Mat grad_y;
+
+		
 
 		void reorganize_frags();
 
@@ -136,7 +145,7 @@ namespace ats
 		void label_pixel(const Point& p,const Scalar& color,int r=0);
 		void label_hole(const hole& h,const Scalar& color);
 		void label_hole(const hole& h,const Scalar& color,int num);
-
+		void label_holes();
 		
 
 		void morphology_filter(Mat& img,Mat& dst,int morph_operator,int morph_elem,int morph_size);
@@ -634,6 +643,14 @@ namespace ats
 	class holes_matching
 	{
 	public:
+		static void load_file_path()
+		{
+			char str[1000];
+			sprintf(str,"G:\\OPENCV_WORKSPACE\\ATS_IMG_RESULT\\#1_file\\record_%d.txt",time((time_t*)NULL));
+				
+			file_path=string(str);
+			
+		}
 		static void load_last_frame(ats_frame* p_frame)
 		{
 			last_frame=p_frame;
@@ -642,11 +659,74 @@ namespace ats
 		{
 			current_frame=p_frame;
 		}
+		
+		static void run()
+		{
+			total_cost=calc_matching_cost();
+		}
+		/*
+		static void print_result()
+		{
+			cout<<"#"<<last_frame->get_index()<<" & "<<current_frame->get_index()<<":"<<endl;
+			//matching result:
+			cout<<"matching pairs(last,current):"<<endl;
+			for(int i=0;i<cost_m.rows;i++)
+				cout<<"("<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<")"<<endl;
+			cout<<"total matching cost:"<<total_cost<<endl;
+			cout<<"cost matrix:"<<endl<<cost_m<<endl;
+
+			//index map:
+			cout<<"row index:"<<endl;
+			for(int i=0;i<cost_m.rows;i++)
+				cout<<revindex_map_l[i]<<endl;
+			cout<<"column index:"<<endl;
+			for(int i=0;i<cost_m.rows;i++)
+				cout<<revindex_map_c[i]<<endl;
+		}*/
+		static void print_result()
+		{
+			cout<<"#"<<last_frame->get_index()<<" & "<<current_frame->get_index()<<":"<<endl;
+
+			FILE* fp=fopen(file_path.c_str(),"a");
+
+			fprintf(fp,"#%d & #%d:\n",last_frame->get_index(),current_frame->get_index());
+			fprintf(fp,"matching pairs(last,current):\n");
+			for(int i=0;i<cost_m.rows;i++)
+				fprintf(fp,"(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]]);
+			fprintf(fp,"total matching cost:%d\n",total_cost);
+			
+		
+
+			fclose(fp);
+		
+		}
+	private:
+		static string file_path;
+
+		static map<int,int> result_row;
+		static map<int,int> result_col;
+
+		static float total_cost;
+
+		static int row_res[100000];
+		static int col_res[100000];
+
+		static map<int,int> revindex_map_c;//i to index
+		static map<int,int> revindex_map_l;
+
+		static ats_frame* last_frame;
+		static ats_frame* current_frame;
+		static bool is_l_loaded;
+		static bool is_c_loaded;
+		
+
 		static float calc_matching_cost()
 		{
-			calc_cost_m();
+		    bool is_successfull=calc_cost_m();
 			
-			
+			if(!is_successfull)
+				return 0;
+
 			float res=hungarian<float>(cost_m,row_res,col_res);
 			
 			/*
@@ -666,40 +746,13 @@ namespace ats
 			*/
 
 
-			handle_matching_res();
+			handle_matching_res(file_path);
 
 
 			//return total matching cost
 			return res;
 		}
 
-
-		
-
-		static void print_result()
-		{
-
-			//matching result:
-			cout<<"matching pairs(last,current):"<<endl;
-			for(int i=0;i<cost_m.rows;i++)
-				cout<<"("<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<")"<<endl;
-			
-			cout<<"cost matrix:"<<endl<<cost_m<<endl;
-
-			//index map:
-			cout<<"row index:"<<endl;
-			for(int i=0;i<cost_m.rows;i++)
-				cout<<revindex_map_l[i]<<endl;
-			cout<<"column index:"<<endl;
-			for(int i=0;i<cost_m.rows;i++)
-				cout<<revindex_map_c[i]<<endl;
-		}
-	private:
-
-		static map<int,int> result_row;
-		static map<int,int> result_col;
-
-		
 		static void handle_matching_res()
 		{
 			for(int i=0;i<cost_m.rows;i++)
@@ -720,6 +773,32 @@ namespace ats
 
 			}
 		}
+		static void handle_matching_res(const string& file_path)
+		{
+			FILE* fp=fopen(file_path.c_str(),"a");
+			for(int i=0;i<cost_m.rows;i++)
+			{
+				if(revindex_map_l[i]==-1)
+					continue;
+
+				//first, update all the overlapping numbers of the current frame to the ones of the previous frame
+				current_frame->update_hole(revindex_map_c[row_res[i]],*(last_frame->get_hole(revindex_map_l[i])));
+				//then judge overlappings and make increment
+				if(judge_overlapping(*(last_frame->get_hole(revindex_map_l[i])),*(current_frame->get_hole(revindex_map_c[row_res[i]]))))
+				{
+					cout<<"new overlapping location(pre_index,cur_index:pre_area->cur_area):"<<endl;
+					cout<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<":"
+					<<last_frame->get_hole(revindex_map_l[i])->get_area()<<"->"<<(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area()<<endl;
+					
+					fprintf(fp,"new overlapping location(pre_index,cur_index:pre_area->cur_area):\n%d,%d:%d->%d\n",revindex_map_l[i],revindex_map_c[row_res[i]],last_frame->get_hole(revindex_map_l[i])->get_area(),(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area());
+
+					current_frame->enroll_overlapping(revindex_map_c[row_res[i]]);
+				}
+
+			}
+			fclose(fp);
+		}
+
 
 		static bool judge_overlapping(const hole& pre_h,const hole& cur_h)
 		{
@@ -727,16 +806,6 @@ namespace ats
 		}
 
 
-		static int row_res[100000];
-		static int col_res[100000];
-
-		static map<int,int> revindex_map_c;//i to index
-		static map<int,int> revindex_map_l;
-
-		static ats_frame* last_frame;
-		static ats_frame* current_frame;
-		static bool is_l_loaded;
-		static bool is_c_loaded;
 		
 		
 
@@ -791,7 +860,7 @@ namespace ats
 			}
 			else
 			{
-				cout<<"warning:"<<endl;
+				cout<<"Error:number of holes have decreased."<<endl;
 				return false;
 			}
 

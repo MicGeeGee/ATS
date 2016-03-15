@@ -60,10 +60,54 @@ namespace ats
 
 	void patch_process()
 	{
+		ats::ats_svm::load("svm_classifier.xml");
+
+		ats::ats_frame* pframe_l;
+		ats::ats_frame* pframe_c;
+
+		holes_matching::load_file_path();
+
+		char file_path[100];
+		int i=1;
 		while(true)
 		{
+			if(i==1)
+			{
+				sprintf(file_path,"E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_%d.jpg",i++);
+				pframe_l=new ats::ats_frame(file_path);
+			}
+			sprintf(file_path,"E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_%d.jpg",i++);
+			pframe_c=new ats::ats_frame(file_path);
+
+			if(pframe_c->data==NULL||pframe_l->data==NULL)
+			{
+				cout<<"Done."<<endl;
+				return;
+			}
+
+
+			if(pframe_l->get_index()==0)
+				pframe_l->detect_holes();
+
+			pframe_c->detect_holes();
+
+			holes_matching::load_last_frame(pframe_l);
+			holes_matching::load_current_frame(pframe_c);
+			holes_matching::run();
+			holes_matching::print_result();
 			
-		
+			if(pframe_l->get_index()==0)
+			{
+				sprintf(file_path,"G:\\OPENCV_WORKSPACE\\ATS_IMG_RESULT\\#1\\%Img_%d.jpg",pframe_l->get_index());
+				pframe_l->save(file_path);
+			}
+
+			sprintf(file_path,"G:\\OPENCV_WORKSPACE\\ATS_IMG_RESULT\\#1\\%Img_%d.jpg",pframe_c->get_index());
+			pframe_c->save(file_path);
+
+			delete pframe_l;
+			pframe_l=pframe_c;
+			
 		}
 			
 	}
@@ -75,44 +119,10 @@ int main()
 {
 	
 
-	ats::ats_svm::load("svm_classifier.xml");
 
-//	ats::ats_frame frame("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\reEidted.bmp");
-	
-	ats::ats_frame frame_l;
-	ats::ats_frame frame_c;
-	
-	frame_l.load_img("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_1.jpg");
-	frame_c.load_img("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_120.jpg");
-
-	//ats::ats_frame frame_l("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_1.jpg");
-	//ats::ats_frame frame_c("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_120.jpg");
-	
-	
-//	frame.detect_holes();
-//  frame.show();
-	frame_l.detect_holes();
-	
-	frame_c.detect_holes();
-	
-
-	ats::holes_matching::load_last_frame(&frame_l);
-	ats::holes_matching::load_current_frame(&frame_c);
-	
-	ats::holes_matching::calc_matching_cost();
-	ats::holes_matching::print_result();
-
-
-	
-	//frame.save_g("C:\\Users\\Administrator\\Desktop\\img\\img_g.jpg");
-	
-	frame_l.show();
-	frame_c.show();
-	frame_l.save("C:\\Users\\Administrator\\Desktop\\img\\img_1.jpg");
-	frame_c.save("C:\\Users\\Administrator\\Desktop\\img\\img_120.jpg");
-
-
-
+	ats::patch_process();
 	waitKey();
 	return 0;
+
+
 }

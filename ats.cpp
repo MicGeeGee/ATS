@@ -14,6 +14,7 @@ namespace ats
 	{
 		index=ats_frame::generate_index();
 
+		is_labeled=false;
 		overlapping_num=0;
 
 		this->origin_img=RGB_img;
@@ -26,6 +27,7 @@ namespace ats
 	{
 		index=ats_frame::generate_index();
 
+		is_labeled=false;
 		overlapping_num=0;
 
 		origin_img=imread(img_path);
@@ -35,6 +37,7 @@ namespace ats
 	}
 	ats_frame::ats_frame():Mat()
 	{
+		is_labeled=false;
 		index=ats_frame::generate_index();
 		overlapping_num=0;
 		is_holes_detected=false;
@@ -47,7 +50,7 @@ namespace ats
 		overlapping_num=frame.overlapping_num;
 
 		overlapping_list=frame.overlapping_list;
-
+		is_labeled=frame.is_labeled;
 		max_dis=frame.max_dis;
 		dis_mat=frame.dis_mat;
 		index_map=frame.index_map;
@@ -267,8 +270,8 @@ namespace ats
 
 		hole::index_generator_clear();//for different frames
 
-		//GaussianBlur(*this,*this,Size(5,5),0,0);
-		this->morphology_filter(*this,*this,0,2,2);
+		GaussianBlur(*this,*this,Size(5,5),0,0);
+		//this->morphology_filter(*this,*this,0,2,3);
 		
 		for(int i=thre_min;i<=mid_brgtnss;i+=20)
 		{
@@ -345,17 +348,12 @@ namespace ats
 	{
 		Mat dst;
 
-		list<hole>::iterator it;
-		for(it=hole_set.begin();it!=hole_set.end();it++)
-			label_hole(*it,Scalar(0, 255, 0),it->get_index());
-			
-		char label[20];
-		char label_gray[20];
-		sprintf(label,"frame_%d",this->index);
-		sprintf(label_gray,"frame_g_%d",this->index);
+		label_holes();
 
-		print_num(origin_img,hole_set.size(),this->overlapping_num);
 		resize_img(origin_img,dst,zoom_scale);
+		char label[20];
+		sprintf(label,"frame_%d",this->index);
+		
 		imshow(label,dst);
 
 
@@ -366,6 +364,7 @@ namespace ats
 
 	void ats_frame::save(const string& tar_path)
 	{
+		label_holes();
 		imwrite(tar_path,this->origin_img);
 	}
 	void ats_frame::save_g(const string& tar_path)
@@ -389,6 +388,27 @@ namespace ats
 		print_num(this->origin_img,h.get_gp(),num);
 
 	}
+
+	void ats_frame::label_holes()
+	{
+		if(is_labeled)
+			return;
+		else
+		{
+			list<hole>::iterator it;
+			for(it=hole_set.begin();it!=hole_set.end();it++)
+				label_hole(*it,Scalar(0, 255, 0),it->get_index());
+			
+			char label[20];
+			char label_gray[20];
+			sprintf(label,"frame_%d",this->index);
+			sprintf(label_gray,"frame_g_%d",this->index);
+
+			print_num(origin_img,hole_set.size(),this->overlapping_num);
+			is_labeled=true;
+		}
+	}
+		
 
 	uchar ats_frame::mat_at(const Point& p)const
 	{
@@ -794,6 +814,8 @@ namespace ats
 
 	int holes_matching::row_res[100000];
 	int holes_matching::col_res[100000];
+	float holes_matching::total_cost;
 
+	string holes_matching::file_path;
 
 }
