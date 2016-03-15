@@ -1,0 +1,44 @@
+﻿生成启动时间为 2016/3/15 星期二 14:25:15。
+     1>项目“G:\OPENCV_WORKSPACE\ATS\ATS\ATS.vcxproj”在节点 2 上(Build 个目标)。
+     1>ClCompile:
+         G:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt ats.cpp main.cpp
+         main.cpp
+     1>g:\opencv3\opencv\build\include\opencv2\core\mat.hpp(1965): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+     1>g:\opencv3\opencv\build\include\opencv2\core\persistence.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+     1>g:\opencv3\opencv\build\include\opencv2\core\utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+     1>g:\opencv_workspace\ats\ats\ats.h(189): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(217): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(225): warning C4305: “return”: 从“double”到“float”截断
+     1>g:\opencv_workspace\ats\ats\ats.h(228): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(233): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(240): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(246): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(283): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(284): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(285): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(291): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(292): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(293): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(353): warning C4018: “<”: 有符号/无符号不匹配
+     1>g:\opencv_workspace\ats\ats\ats.h(435): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
+     1>g:\opencv_workspace\ats\ats\ats.h(445): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
+     1>g:\opencv_workspace\ats\ats\ats.h(457): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
+     1>g:\opencv_workspace\ats\ats\ats.h(463): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(237) : 参见“fscanf”的声明
+     1>g:\opencv_workspace\ats\ats\ats.h(806): warning C4244: “+=”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(817): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+         正在生成代码...
+         正在跳过...(未检测到相关更改)
+         ats.cpp
+       Link:
+         G:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"G:\OPENCV_WORKSPACE\ATS\Debug\ATS.exe" /INCREMENTAL /NOLOGO opencv_ts300d.lib opencv_world300d.lib IlmImfd.lib libjasperd.lib libjpegd.lib libpngd.lib libtiffd.lib libwebpd.lib opencv_calib3d300d.lib opencv_core300d.lib opencv_features2d300d.lib opencv_flann300d.lib opencv_highgui300d.lib opencv_imgcodecs300d.lib opencv_imgproc300d.lib opencv_ml300d.lib opencv_objdetect300d.lib opencv_photo300d.lib opencv_shape300d.lib opencv_stitching300d.lib opencv_superres300d.lib opencv_video300d.lib opencv_videoio300d.lib opencv_videostab300d.lib zlibd.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"G:\OPENCV_WORKSPACE\ATS\Debug\ATS.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"G:\OPENCV_WORKSPACE\ATS\Debug\ATS.lib" /MACHINE:X86 Debug\ats.obj
+         Debug\main.obj
+         ATS.vcxproj -> G:\OPENCV_WORKSPACE\ATS\Debug\ATS.exe
+     1>已完成生成项目“G:\OPENCV_WORKSPACE\ATS\ATS\ATS.vcxproj”(Build 个目标)的操作。
+
+生成成功。
+
+已用时间 00:00:02.92
