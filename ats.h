@@ -30,6 +30,17 @@ namespace ats
 		ats_frame(const string& img_path);
 
 		ats_frame(const ats_frame& frame);
+
+		ats_frame();
+
+		void load_img(const string& img_path)
+		{
+			*this=imread(img_path);
+			origin_img=imread(img_path);
+			calc_gradient(*this,grad_val,grad_x,grad_y);
+			calc_mid_brgtnss();
+		}
+
 		void show(double zoom_scale=0.7);
 		void save(const string& tar_path);
 		void save_g(const string& tar_path);
@@ -403,6 +414,7 @@ namespace ats
 		static void load(const string& file_name)
 		{
 			classifier=Algorithm::load<ml::SVM>(file_name);
+			
 			is_trained=true;
 		}
 

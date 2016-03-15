@@ -33,6 +33,13 @@ namespace ats
 		calc_mid_brgtnss();
 		is_holes_detected=false;
 	}
+	ats_frame::ats_frame():Mat()
+	{
+		index=ats_frame::generate_index();
+		overlapping_num=0;
+		is_holes_detected=false;
+	}
+
 
 	ats_frame::ats_frame(const ats_frame& frame): Mat(frame)
 	{

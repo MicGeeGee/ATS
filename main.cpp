@@ -57,6 +57,16 @@ namespace ats
 		ats::ats_svm::train<float>(ats::ats_svm::training_data,ats::ats_svm::labels);
 		ats::ats_svm::save("svm_classifier.xml");
 	}
+
+	void patch_process()
+	{
+		while(true)
+		{
+			
+		
+		}
+			
+	}
 }
 
 
@@ -68,8 +78,15 @@ int main()
 	ats::ats_svm::load("svm_classifier.xml");
 
 //	ats::ats_frame frame("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\reEidted.bmp");
-	ats::ats_frame frame_l("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_1.jpg");
-	ats::ats_frame frame_c("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_120.jpg");
+	
+	ats::ats_frame frame_l;
+	ats::ats_frame frame_c;
+	
+	frame_l.load_img("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_1.jpg");
+	frame_c.load_img("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_120.jpg");
+
+	//ats::ats_frame frame_l("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_1.jpg");
+	//ats::ats_frame frame_c("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_120.jpg");
 	
 	
 //	frame.detect_holes();
