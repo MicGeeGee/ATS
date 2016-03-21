@@ -1,41 +1,107 @@
-﻿生成启动时间为 2016/3/15 星期二 17:47:25。
+﻿生成启动时间为 2016/3/21 星期一 17:24:43。
      1>项目“G:\OPENCV_WORKSPACE\ATS\ATS\ATS.vcxproj”在节点 2 上(Build 个目标)。
      1>ClCompile:
          G:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt ats.cpp main.cpp
+         ats.cpp
+     1>g:\opencv3\opencv\build\include\opencv2\core\mat.hpp(1965): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+     1>g:\opencv3\opencv\build\include\opencv2\core\persistence.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+     1>g:\opencv3\opencv\build\include\opencv2\core\utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+     1>g:\opencv_workspace\ats\ats\ats.h(201): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(229): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(237): warning C4305: “return”: 从“double”到“float”截断
+     1>g:\opencv_workspace\ats\ats\ats.h(240): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(245): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(252): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(258): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(295): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(296): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(297): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(303): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(304): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(305): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(365): warning C4018: “<”: 有符号/无符号不匹配
+     1>g:\opencv_workspace\ats\ats\ats.h(447): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
+     1>g:\opencv_workspace\ats\ats\ats.h(457): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
+     1>g:\opencv_workspace\ats\ats\ats.h(469): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
+     1>g:\opencv_workspace\ats\ats\ats.h(475): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(237) : 参见“fscanf”的声明
+     1>g:\opencv_workspace\ats\ats\ats.h(652): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
+     1>g:\opencv_workspace\ats\ats\ats.h(702): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
+     1>g:\opencv_workspace\ats\ats\ats.h(795): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
+     1>g:\opencv_workspace\ats\ats\ats.h(898): warning C4244: “+=”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(78): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(116): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(123): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
+     1>g:\opencv_workspace\ats\ats\ats.cpp(131): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
+     1>g:\opencv_workspace\ats\ats\ats.cpp(138): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
+     1>g:\opencv_workspace\ats\ats\ats.cpp(289): warning C4018: “<”: 有符号/无符号不匹配
+     1>g:\opencv_workspace\ats\ats\ats.cpp(361): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
+     1>g:\opencv_workspace\ats\ats\ats.cpp(383): warning C4018: “<”: 有符号/无符号不匹配
+     1>g:\opencv_workspace\ats\ats\ats.cpp(391): warning C4018: “<”: 有符号/无符号不匹配
+     1>g:\opencv_workspace\ats\ats\ats.cpp(410): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
+     1>g:\opencv_workspace\ats\ats\ats.cpp(411): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
+     1>g:\opencv_workspace\ats\ats\ats.cpp(489): warning C4244: “+=”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(490): warning C4244: “+=”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(544): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(548): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(616): warning C4018: “<”: 有符号/无符号不匹配
+     1>g:\opencv_workspace\ats\ats\ats.cpp(619): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(641): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(647): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(722): warning C4018: “<”: 有符号/无符号不匹配
+     1>g:\opencv_workspace\ats\ats\ats.cpp(727): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(757): warning C4018: “<”: 有符号/无符号不匹配
+     1>g:\opencv_workspace\ats\ats\ats.cpp(785): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.cpp(799): warning C4018: “<”: 有符号/无符号不匹配
+     1>g:\opencv_workspace\ats\ats\ats.h(506): warning C4244: “return”: 从“float”转换到“int”，可能丢失数据
+                 g:\opencv_workspace\ats\ats\ats.cpp(312): 参见对正在编译的函数 模板 实例化“int ats::ats_svm::predict<float>(const cv::Mat &)”的引用
+         正在生成代码...
+         正在编译...
          main.cpp
      1>g:\opencv3\opencv\build\include\opencv2\core\mat.hpp(1965): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
      1>g:\opencv3\opencv\build\include\opencv2\core\persistence.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
      1>g:\opencv3\opencv\build\include\opencv2\core\utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-     1>g:\opencv_workspace\ats\ats\ats.h(198): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(226): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(234): warning C4305: “return”: 从“double”到“float”截断
-     1>g:\opencv_workspace\ats\ats\ats.h(237): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(242): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(249): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(255): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(292): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(293): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(294): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(300): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(301): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(302): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(362): warning C4018: “<”: 有符号/无符号不匹配
-     1>g:\opencv_workspace\ats\ats\ats.h(444): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>g:\opencv_workspace\ats\ats\ats.h(201): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(229): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(237): warning C4305: “return”: 从“double”到“float”截断
+     1>g:\opencv_workspace\ats\ats\ats.h(240): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(245): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(252): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(258): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(295): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(296): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(297): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(303): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(304): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(305): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(365): warning C4018: “<”: 有符号/无符号不匹配
+     1>g:\opencv_workspace\ats\ats\ats.h(447): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(454): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>g:\opencv_workspace\ats\ats\ats.h(457): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(466): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>g:\opencv_workspace\ats\ats\ats.h(469): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(472): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>g:\opencv_workspace\ats\ats\ats.h(475): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(237) : 参见“fscanf”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(649): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>g:\opencv_workspace\ats\ats\ats.h(652): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(690): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>g:\opencv_workspace\ats\ats\ats.h(702): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(778): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>g:\opencv_workspace\ats\ats\ats.h(795): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(875): warning C4244: “+=”: 从“double”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(886): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
+     1>g:\opencv_workspace\ats\ats\ats.h(898): warning C4244: “+=”: 从“double”转换到“float”，可能丢失数据
      1>g:\opencv_workspace\ats\ats\main.cpp(76): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
      1>g:\opencv_workspace\ats\ats\main.cpp(79): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
@@ -45,73 +111,6 @@
      1>g:\opencv_workspace\ats\ats\main.cpp(105): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
          正在生成代码...
-         正在编译...
-         ats.cpp
-     1>g:\opencv3\opencv\build\include\opencv2\core\mat.hpp(1965): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-     1>g:\opencv3\opencv\build\include\opencv2\core\persistence.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-     1>g:\opencv3\opencv\build\include\opencv2\core\utility.hpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-     1>g:\opencv_workspace\ats\ats\ats.h(198): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(226): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(234): warning C4305: “return”: 从“double”到“float”截断
-     1>g:\opencv_workspace\ats\ats\ats.h(237): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(242): warning C4244: “return”: 从“double”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(249): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(255): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(292): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(293): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(294): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(300): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(301): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(302): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(362): warning C4018: “<”: 有符号/无符号不匹配
-     1>g:\opencv_workspace\ats\ats\ats.h(444): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(454): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(466): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(472): warning C4996: 'fscanf': This function or variable may be unsafe. Consider using fscanf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(237) : 参见“fscanf”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(649): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(690): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(778): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(218) : 参见“fopen”的声明
-     1>g:\opencv_workspace\ats\ats\ats.h(875): warning C4244: “+=”: 从“double”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.h(886): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.cpp(78): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.cpp(116): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.cpp(123): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
-     1>g:\opencv_workspace\ats\ats\ats.cpp(131): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
-     1>g:\opencv_workspace\ats\ats\ats.cpp(138): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
-     1>g:\opencv_workspace\ats\ats\ats.cpp(283): warning C4018: “<”: 有符号/无符号不匹配
-     1>g:\opencv_workspace\ats\ats\ats.cpp(355): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
-     1>g:\opencv_workspace\ats\ats\ats.cpp(377): warning C4018: “<”: 有符号/无符号不匹配
-     1>g:\opencv_workspace\ats\ats\ats.cpp(385): warning C4018: “<”: 有符号/无符号不匹配
-     1>g:\opencv_workspace\ats\ats\ats.cpp(404): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
-     1>g:\opencv_workspace\ats\ats\ats.cpp(405): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 g:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : 参见“sprintf”的声明
-     1>g:\opencv_workspace\ats\ats\ats.cpp(483): warning C4244: “+=”: 从“double”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.cpp(484): warning C4244: “+=”: 从“double”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.cpp(538): warning C4244: “return”: 从“double”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.cpp(606): warning C4018: “<”: 有符号/无符号不匹配
-     1>g:\opencv_workspace\ats\ats\ats.cpp(609): warning C4244: “参数”: 从“int”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.cpp(631): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.cpp(637): warning C4244: “参数”: 从“double”转换到“float”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.cpp(712): warning C4018: “<”: 有符号/无符号不匹配
-     1>g:\opencv_workspace\ats\ats\ats.cpp(717): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.cpp(747): warning C4018: “<”: 有符号/无符号不匹配
-     1>g:\opencv_workspace\ats\ats\ats.cpp(775): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
-     1>g:\opencv_workspace\ats\ats\ats.cpp(789): warning C4018: “<”: 有符号/无符号不匹配
-     1>g:\opencv_workspace\ats\ats\ats.h(503): warning C4244: “return”: 从“float”转换到“int”，可能丢失数据
-                 g:\opencv_workspace\ats\ats\ats.cpp(306): 参见对正在编译的函数 模板 实例化“int ats::ats_svm::predict<float>(const cv::Mat &)”的引用
-         正在生成代码...
        Link:
          G:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"G:\OPENCV_WORKSPACE\ATS\Debug\ATS.exe" /INCREMENTAL /NOLOGO opencv_ts300d.lib opencv_world300d.lib IlmImfd.lib libjasperd.lib libjpegd.lib libpngd.lib libtiffd.lib libwebpd.lib opencv_calib3d300d.lib opencv_core300d.lib opencv_features2d300d.lib opencv_flann300d.lib opencv_highgui300d.lib opencv_imgcodecs300d.lib opencv_imgproc300d.lib opencv_ml300d.lib opencv_objdetect300d.lib opencv_photo300d.lib opencv_shape300d.lib opencv_stitching300d.lib opencv_superres300d.lib opencv_video300d.lib opencv_videoio300d.lib opencv_videostab300d.lib zlibd.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"G:\OPENCV_WORKSPACE\ATS\Debug\ATS.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"G:\OPENCV_WORKSPACE\ATS\Debug\ATS.lib" /MACHINE:X86 Debug\ats.obj
          Debug\main.obj
@@ -120,4 +119,4 @@
 
 生成成功。
 
-已用时间 00:00:04.29
+已用时间 00:00:04.92

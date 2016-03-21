@@ -58,7 +58,7 @@ namespace ats
 		ats::ats_svm::save("svm_classifier.xml");
 	}
 
-	void patch_process()
+	void patch_process(int start_index)
 	{
 		ats::ats_svm::load("svm_classifier.xml");
 
@@ -68,10 +68,10 @@ namespace ats
 		holes_matching::load_file_path();
 
 		char file_path[100];
-		int i=1;
+		int i=start_index;
 		while(true)
 		{
-			if(i==1)
+			if(i==start_index)
 			{
 				sprintf(file_path,"E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_%d.jpg",i++);
 				pframe_l=new ats::ats_frame(file_path);
@@ -111,6 +111,8 @@ namespace ats
 		}
 			
 	}
+
+	
 }
 
 
@@ -118,9 +120,8 @@ namespace ats
 int main()
 {
 	
-
-
-	ats::patch_process();
+	
+	ats::patch_process(1);
 	waitKey();
 	return 0;
 

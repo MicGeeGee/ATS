@@ -254,6 +254,12 @@ namespace ats
 		ptr_map[index]->enroll_overlapping();
 			
 	}
+
+	void ats_frame::set_overlapping_num(int n)
+	{
+		overlapping_num=n;
+	}
+
 	void ats_frame::update_hole(int index,const hole& h)
 	{
 		if(overlapping_list.find(index)==overlapping_list.end()&&h.get_overlapping_num()>0)
@@ -273,7 +279,7 @@ namespace ats
 		GaussianBlur(*this,*this,Size(5,5),0,0);
 		//this->morphology_filter(*this,*this,0,2,3);
 		
-		for(int i=thre_min;i<=mid_brgtnss;i+=20)
+		for(int i=thre_min;i<=mid_brgtnss;i+=30)
 		{
 			Mat thre_img;
 			vector<vector<Point> > contour_container;
@@ -446,7 +452,7 @@ namespace ats
 					it2++;
 					continue;
 				}
-				if(calc_dis(it1->get_gp(),it2->get_gp())>(it1->get_area()+it2->get_area())*2)
+				if(calc_dis_sq(it1->get_gp(),it2->get_gp())<(it1->get_area()>it2->get_area()?it1->get_area():it2->get_area()))
 				{
 					it2++;
 					continue;
@@ -459,7 +465,7 @@ namespace ats
 
 				//cout<<"("<<it1->get_index()<<","<<it2->get_index()<<"):"<<frag_assessment(*it1,*it2)<<endl;
 
-				if(frag_assessment(*it1,*it2)<0.5)
+				if(frag_assessment(*it1,*it2)<0.7)
 					it2=merge_holes(it1,it2);
 				else
 					it2++;
@@ -534,6 +540,10 @@ namespace ats
 	}
 
 	int ats_frame::calc_dis(const Point& a,const Point& b)
+	{
+		return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+	}
+	int ats_frame::calc_dis_sq(const Point& a,const Point& b)
 	{
 		return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
 	}
@@ -739,7 +749,7 @@ namespace ats
 	{
 		if(h.area>this->area)
 		{
-			if(h.assess_m_ft()<this->assess_m_ft())
+			if(h.assess_m_ft()<=this->assess_m_ft())
 				*this=hole(h);
 			return;
 		}
@@ -817,5 +827,7 @@ namespace ats
 	float holes_matching::total_cost;
 
 	string holes_matching::file_path;
+	int holes_matching::overlapping_num=0;
+
 
 }

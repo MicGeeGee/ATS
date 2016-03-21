@@ -47,7 +47,7 @@ namespace ats
 		void save_g(const string& tar_path);
 
 
-		void detect_holes(int thre_min=10);
+		void detect_holes(int thre_min=5);
 
 		int get_grad(int x,int y)const;
 		int get_grad(const Point& pos)const;
@@ -76,6 +76,8 @@ namespace ats
 		int get_hole_num()const;
 
 		void enroll_overlapping(int index);
+
+		void set_overlapping_num(int n);
 		void update_hole(int index,const hole& h);
 
 		int get_index()
@@ -123,6 +125,7 @@ namespace ats
 		float frag_assessment(hole& h1,hole& h2);
 
 		int calc_dis(const Point& a,const Point& b);
+		int calc_dis_sq(const Point& a,const Point& b);
 
 		bool is_holes_detected;
 
@@ -660,9 +663,17 @@ namespace ats
 			current_frame=p_frame;
 		}
 		
-		static void run()
+		static bool run()
 		{
 			total_cost=calc_matching_cost();
+
+			current_frame->set_overlapping_num(overlapping_num);
+
+
+			if(total_cost==-1)
+				return	false;//means the hole num has decreased.
+			else
+				return true;
 		}
 		/*
 		static void print_result()
@@ -685,7 +696,8 @@ namespace ats
 		}*/
 		static void print_result()
 		{
-			cout<<"#"<<last_frame->get_index()<<" & "<<current_frame->get_index()<<":"<<endl;
+			cout<<"#"<<last_frame->get_index()<<" & "<<current_frame->get_index()<<":"<<total_cost<<endl;
+			cout<<cost_m<<endl;
 
 			FILE* fp=fopen(file_path.c_str(),"a");
 
@@ -693,7 +705,7 @@ namespace ats
 			fprintf(fp,"matching pairs(last,current):\n");
 			for(int i=0;i<cost_m.rows;i++)
 				fprintf(fp,"(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]]);
-			fprintf(fp,"total matching cost:%d\n",total_cost);
+			fprintf(fp,"total matching cost:%f\n",total_cost);
 			
 		
 
@@ -701,6 +713,8 @@ namespace ats
 		
 		}
 	private:
+		static int overlapping_num;
+
 		static string file_path;
 
 		static map<int,int> result_row;
@@ -725,10 +739,16 @@ namespace ats
 		    bool is_successfull=calc_cost_m();
 			
 			if(!is_successfull)
-				return 0;
+				return -1;
 
 			float res=hungarian<float>(cost_m,row_res,col_res);
-			
+			res/=cost_m.cols;
+
+			//if the matching method fails(i.e. the position pattern has changed a lot)
+			//then the overlapping detection will not be run.
+			if(res>1)
+				return -1;
+
 			/*
 			//for those holes matching dumppy holes
 			list<hole>::iterator it;
@@ -786,23 +806,29 @@ namespace ats
 				//then judge overlappings and make increment
 				if(judge_overlapping(*(last_frame->get_hole(revindex_map_l[i])),*(current_frame->get_hole(revindex_map_c[row_res[i]]))))
 				{
+					overlapping_num++;
+
 					cout<<"new overlapping location(pre_index,cur_index:pre_area->cur_area):"<<endl;
 					cout<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<":"
 					<<last_frame->get_hole(revindex_map_l[i])->get_area()<<"->"<<(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area()<<endl;
 					
 					fprintf(fp,"new overlapping location(pre_index,cur_index:pre_area->cur_area):\n%d,%d:%d->%d\n",revindex_map_l[i],revindex_map_c[row_res[i]],last_frame->get_hole(revindex_map_l[i])->get_area(),(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area());
 
-					current_frame->enroll_overlapping(revindex_map_c[row_res[i]]);
+					//current_frame->enroll_overlapping(revindex_map_c[row_res[i]]);
+
+					
 				}
 
 			}
+			
+
 			fclose(fp);
 		}
 
 
 		static bool judge_overlapping(const hole& pre_h,const hole& cur_h)
 		{
-			return cur_h.get_area()>pre_h.get_area()*1.5;
+			return cur_h.get_area()>pre_h.get_area()*2.5&&calc_dis_sq(pre_h.get_gp(),cur_h.get_gp())>=2;
 		}
 
 
@@ -860,7 +886,7 @@ namespace ats
 			}
 			else
 			{
-				cout<<"Error:number of holes have decreased."<<endl;
+				cout<<"Warning:number of holes have decreased."<<endl;
 				return false;
 			}
 
@@ -881,9 +907,9 @@ namespace ats
 		}
 		
 		
-		static int calc_dis(const Point& a,const Point& b)
+		static int calc_dis_sq(const Point& a,const Point& b)
 		{
-			return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
+			return (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y);
 		}
 
 		template<typename _type> 
