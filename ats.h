@@ -45,9 +45,9 @@ namespace ats
 		void show(double zoom_scale=0.7);
 		void save(const string& tar_path);
 		void save_g(const string& tar_path);
+		void save_hole_set(const string& tar_path);
 
-
-		void detect_holes(int thre_min=5);
+		void detect_holes(int thre_min=10);
 
 		int get_grad(int x,int y)const;
 		int get_grad(const Point& pos)const;
@@ -146,8 +146,8 @@ namespace ats
 		void calc_gradient(const Mat& src,Mat& dst,Mat& dst_x,Mat& dst_y);
 		void calc_mid_brgtnss();
 		void label_pixel(const Point& p,const Scalar& color,int r=0);
-		void label_hole(const hole& h,const Scalar& color);
-		void label_hole(const hole& h,const Scalar& color,int num);
+		void label_hole(hole& h,const Scalar& color);
+		void label_hole(hole& h,const Scalar& color,int num);
 		void label_holes();
 		
 
@@ -272,39 +272,39 @@ namespace ats
 		class manual_ft : public Mat
 		{
 		public:
-			manual_ft(const ats_frame&  frame,const vector<Point>& contour);
+			manual_ft(const ats_frame&  frame);
 			manual_ft(const manual_ft& ft);
 
-			Mat get_val(const ats_frame&  frame,const vector<Point>& contour)
+			Mat get_val(const ats_frame&  frame,hole& h)
 			{
 				if(is_loaded)
 					return *this;
 				else
 				{
-					calc_ft(frame,contour);
+					calc_ft(frame,h);
 					return *this;
 				}
 			}
 			
-			float get_val(const ats_frame&  frame,const vector<Point>& contour,int dim_i);
+			float get_val(const ats_frame&  frame,hole& h,int dim_i);
 
-			int assess_ft(const ats_frame&  frame,const vector<Point>& contour)
+			int assess_ft(const ats_frame&  frame,hole& h)
 			{
-				if(is_loaded)
-				{
-					int cir_param=get_val(frame,contour,2)*100;
-					int body_contrast_param=100*get_val(frame,contour,1);
-					int bg_contrast_param=150*get_val(frame,contour,3);
-					return cir_param+body_contrast_param+bg_contrast_param;
-				}
-				else
-				{
-					calc_ft(frame,contour);
-					int cir_param=get_val(frame,contour,2)*100;
-					int body_contrast_param=100*get_val(frame,contour,1);
-					int bg_contrast_param=150*get_val(frame,contour,3);
-					return cir_param+body_contrast_param+bg_contrast_param;
-				}
+				if(!is_loaded)
+					calc_ft(frame,h);
+					
+				
+				
+				int body_contrast_param=100*get_val(frame,h,1);
+				int cir_param=100*get_val(frame,h,2);
+				int bg_contrast_param=300*get_val(frame,h,3);
+				int grad_contrast_param=200*get_val(frame,h,4);
+
+				//int area_param=h.get_area();
+
+				return cir_param+body_contrast_param+bg_contrast_param+grad_contrast_param;
+
+
 			}
 
 		private:
@@ -320,7 +320,7 @@ namespace ats
 			};
 			
 			bool is_loaded;
-			void calc_ft(const ats_frame&  frame,const vector<Point>& contour);
+			void calc_ft(const ats_frame&  frame,hole& h);
 
 			f_point normalize_vector(float x,float y);
 			void set_val(int dim_i,float val);
@@ -332,16 +332,16 @@ namespace ats
 		
 		float get_m_ft(int dim_i)
 		{
-			return this->m_ft.get_val(*p_frame,this->contour,dim_i);
+			return this->m_ft.get_val(*p_frame,*this,dim_i);
 		}
 		int assess_m_ft()
 		{
-			return this->m_ft.assess_ft(*p_frame,this->contour);
+			return this->m_ft.assess_ft(*p_frame,*this);
 		}
 		Mat get_m_ft()
 		{
 
-			return this->m_ft.get_val(*p_frame,contour);
+			return this->m_ft.get_val(*p_frame,*this);
 		}
 
 
@@ -354,7 +354,7 @@ namespace ats
 		int get_grad_mid()const;
 		int get_area()const;
 		Point get_gp()const;
-		vector<Point> get_contour()const;
+		vector<Point>& get_contour();
 
 		static bool same_pos(const hole& h1,const hole& h2);
 
@@ -388,24 +388,83 @@ namespace ats
 			this->overlapping_num=h.overlapping_num;
 		}
 
+		void set_area_in_series(int val)
+		{
+			area_in_series=val;
+		}
+		int get_area_in_series()const
+		{
+			return area_in_series;
+		}
+
+		int get_body_brghtnss_mid()
+		{
+			if(body_brghtnss_mid>0)
+				return body_brghtnss_mid;
+			else
+			{
+				calc_body_info();
+				return body_brghtnss_mid;
+			}
+		}
+		int get_body_grad_mid()
+		{
+			if(body_grad_mid>0)
+				return body_grad_mid;
+			else
+			{
+				calc_body_info();
+				return body_grad_mid;
+			}
+		}
+
+
 	private:
+		int index;
+		int area;
+		Point gp;
+		
+		int area_in_series;
+
+		int body_brghtnss_mid;
+		int body_grad_mid;
+
 		ats_frame* p_frame;
 
 		manual_ft m_ft;
 		shape_ft s_ft;
-		int index;
+		
 		static int index_generator;
 		int generate_index();
 		
-		Point gp;
+		
 		vector<Point> contour;
 		
 		int grad_mid;
 		vector<int> con_grad_arr; 
 		
-		int area;
+		
 	
 		int overlapping_num;
+
+		void calc_body_info()
+		{
+			vector<int> body_brghtnss_arr;
+			vector<int> body_grad_arr;
+			Rect rect =boundingRect(this->contour);
+			for(int i=rect.width/4;i<rect.width*3/4;i++)
+				for(int j=rect.height/4;j<rect.height*3/4;j++)
+				{
+					body_brghtnss_arr.push_back(p_frame->get_brgtnss(rect.x+i,rect.y+j));
+					body_grad_arr.push_back(p_frame->get_grad(rect.x+i,rect.y+j));
+				}
+			std::sort(body_brghtnss_arr.begin(),body_brghtnss_arr.end());
+			std::sort(body_grad_arr.begin(),body_grad_arr.end());
+
+			body_brghtnss_mid=body_brghtnss_arr[body_brghtnss_arr.size()/2];
+			body_grad_mid=body_grad_arr[body_grad_arr.size()/2];
+
+		}
 
 		static int dis_sq(const Point& p1,const Point& p2);
 		void calc_gp();
@@ -448,7 +507,7 @@ namespace ats
 			list<Mat>::iterator it=training_data.begin();
 			list<int>::iterator lb_it=labels.begin();
 			for(;it!=training_data.end();it++,lb_it++)
-				fprintf(fp,"%f %f %f %d\n",it->at<float>(0,0),it->at<float>(0,1),it->at<float>(0,2),*lb_it);
+				fprintf(fp,"%f %f %f %f %d\n",it->at<float>(0,0),it->at<float>(0,1),it->at<float>(0,2),it->at<float>(0,3),*lb_it);
 			fclose(fp);
 		}
 		static void add_data(const string& file_name)
@@ -458,7 +517,7 @@ namespace ats
 			list<Mat>::iterator it=training_data.begin();
 			list<int>::iterator lb_it=labels.begin();
 			for(;it!=training_data.end();it++,lb_it++)
-				fprintf(fp,"%f %f %f %d\n",it->at<float>(0,0),it->at<float>(0,1),it->at<float>(0,2),*lb_it);
+				fprintf(fp,"%f %f %f %f %d\n",it->at<float>(0,0),it->at<float>(0,1),it->at<float>(0,2),it->at<float>(0,3),*lb_it);
 			fclose(fp);
 		}
 
@@ -467,19 +526,20 @@ namespace ats
 		{
 			FILE* fp;
 			fp=fopen(file_name.c_str(),"r");
-			float data[3];
+			float data[4];
 			int label;
 			int num;
 			while(true)
 			{
-				num=fscanf(fp,"%f%f%f%d",&data[0],&data[1],&data[2],&label);
+				num=fscanf(fp,"%f%f%f%f%d",&data[0],&data[1],&data[2],&data[3],&label);
 				if(num<4)
 					break;
 				
-				Mat data_m(1,3,CV_32F);
+				Mat data_m(1,4,CV_32F);
 				data_m.at<float>(0,0)=data[0];
 				data_m.at<float>(0,1)=data[1];
 				data_m.at<float>(0,2)=data[2];
+				data_m.at<float>(0,3)=data[3];
 				training_data.push_back(data_m);
 				labels.push_back(label);
 			}
@@ -490,6 +550,7 @@ namespace ats
 		
 		static Mat get_suprt_vecs()
 		{
+			support_vectors = classifier->getSupportVectors();
 			return support_vectors;
 		}
 
@@ -670,7 +731,7 @@ namespace ats
 			current_frame->set_overlapping_num(overlapping_num);
 
 
-			if(total_cost==-1)
+			if(total_cost==-1||total_cost>0.3)
 				return	false;//means the hole num has decreased.
 			else
 				return true;
@@ -697,7 +758,7 @@ namespace ats
 		static void print_result()
 		{
 			cout<<"#"<<last_frame->get_index()<<" & "<<current_frame->get_index()<<":"<<total_cost<<endl;
-			cout<<cost_m<<endl;
+			//cout<<cost_m<<endl;
 
 			FILE* fp=fopen(file_path.c_str(),"a");
 
@@ -744,9 +805,12 @@ namespace ats
 			float res=hungarian<float>(cost_m,row_res,col_res);
 			res/=cost_m.cols;
 
+
+			area_matching(file_path);
+
 			//if the matching method fails(i.e. the position pattern has changed a lot)
 			//then the overlapping detection will not be run.
-			if(res>1)
+			if(res>0.3)
 				return -1;
 
 			/*
@@ -773,6 +837,30 @@ namespace ats
 			return res;
 		}
 
+		static void area_matching(const string& file_path)
+		{
+			FILE* fp=fopen(file_path.c_str(),"a");
+			for(int i=0;i<cost_m.rows;i++)
+			{
+	
+				if(revindex_map_l[i]==-1)
+					continue;
+
+				
+				int area_c=(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area();
+				int area_l=(last_frame->get_hole(revindex_map_l[i]))->get_area_in_series();
+				if(area_c>area_l)
+					(current_frame->get_hole(revindex_map_c[row_res[i]]))->set_area_in_series(area_c);
+				else
+					(current_frame->get_hole(revindex_map_c[row_res[i]]))->set_area_in_series(area_l);
+
+				printf("(%d,%d):(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]],area_l,area_c);
+				fprintf(fp,"(%d,%d):(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]],area_l,area_c);
+			}
+			fclose(fp);
+		
+		}
+
 		static void handle_matching_res()
 		{
 			for(int i=0;i<cost_m.rows;i++)
@@ -790,6 +878,14 @@ namespace ats
 					<<last_frame->get_hole(revindex_map_l[i])->get_area()<<"->"<<(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area()<<endl;
 					current_frame->enroll_overlapping(revindex_map_c[row_res[i]]);
 				}
+
+				int area_c=(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area();
+				int area_l=(last_frame->get_hole(revindex_map_l[i]))->get_area_in_series();
+				if(area_c>area_l)
+					(current_frame->get_hole(revindex_map_c[row_res[i]]))->set_area_in_series(area_c);
+				else
+					(current_frame->get_hole(revindex_map_c[row_res[i]]))->set_area_in_series(area_l);
+
 
 			}
 		}
@@ -812,12 +908,17 @@ namespace ats
 					cout<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<":"
 					<<last_frame->get_hole(revindex_map_l[i])->get_area()<<"->"<<(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area()<<endl;
 					
-					fprintf(fp,"new overlapping location(pre_index,cur_index:pre_area->cur_area):\n%d,%d:%d->%d\n",revindex_map_l[i],revindex_map_c[row_res[i]],last_frame->get_hole(revindex_map_l[i])->get_area(),(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area());
+					fprintf(fp,"new overlapping location(pre_index,cur_index:pre_area->cur_area):\n%d,%d:%d->%d\n",revindex_map_l[i],revindex_map_c[row_res[i]],last_frame->get_hole(revindex_map_l[i])->get_area_in_series(),(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area());
 
 					//current_frame->enroll_overlapping(revindex_map_c[row_res[i]]);
 
 					
 				}
+
+
+
+				
+
 
 			}
 			
@@ -825,11 +926,17 @@ namespace ats
 			fclose(fp);
 		}
 
+		
+	
+
 
 		static bool judge_overlapping(const hole& pre_h,const hole& cur_h)
 		{
-			return cur_h.get_area()>pre_h.get_area()*2.5&&calc_dis_sq(pre_h.get_gp(),cur_h.get_gp())>=2;
+			return cur_h.get_area()>pre_h.get_area_in_series()*2.5&&calc_dis_sq(pre_h.get_gp(),cur_h.get_gp())>=2;
 		}
+
+
+		
 
 
 		

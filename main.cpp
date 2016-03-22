@@ -85,6 +85,9 @@ namespace ats
 				return;
 			}
 
+			if(pframe_c->get_index()==95)
+				cout<<95<<endl;
+
 
 			if(pframe_l->get_index()==0)
 				pframe_l->detect_holes();
@@ -93,25 +96,41 @@ namespace ats
 
 			holes_matching::load_last_frame(pframe_l);
 			holes_matching::load_current_frame(pframe_c);
-			holes_matching::run();
+			bool matching_res=holes_matching::run();
 			holes_matching::print_result();
 			
 			if(pframe_l->get_index()==0)
 			{
-				sprintf(file_path,"G:\\OPENCV_WORKSPACE\\ATS_IMG_RESULT\\#1\\%Img_%d.jpg",pframe_l->get_index());
+				sprintf(file_path,"G:\\OPENCV_WORKSPACE\\ATS_IMG_RESULT\\#1\\%Img_%d.jpg",pframe_l->get_index()+1);
 				pframe_l->save(file_path);
 			}
 
-			sprintf(file_path,"G:\\OPENCV_WORKSPACE\\ATS_IMG_RESULT\\#1\\%Img_%d.jpg",pframe_c->get_index());
+			
+
+			sprintf(file_path,"G:\\OPENCV_WORKSPACE\\ATS_IMG_RESULT\\#1\\%Img_%d.jpg",pframe_c->get_index()+1);
 			pframe_c->save(file_path);
 
 			delete pframe_l;
 			pframe_l=pframe_c;
 			
+			
+				
+			
 		}
 			
 	}
 
+	void sing_img_process()
+	{
+		ats::ats_svm::load("svm_classifier.xml");
+		ats::ats_frame frame("E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_94.jpg");
+		frame.detect_holes();
+		frame.show();
+		frame.save("C:\\Users\\Administrator\\Desktop\\img\\img_94.jpg");
+		frame.save_hole_set("hole_set.txt");
+
+		cout<<ats::ats_svm::get_suprt_vecs()<<endl;
+	}
 	
 }
 
@@ -119,10 +138,12 @@ namespace ats
 
 int main()
 {
-	
+	//ats::sing_img_process();
 	
 	ats::patch_process(1);
 	waitKey();
+
+	
 	return 0;
 
 

@@ -276,10 +276,10 @@ namespace ats
 
 		hole::index_generator_clear();//for different frames
 
-		GaussianBlur(*this,*this,Size(5,5),0,0);
+		GaussianBlur(*this,*this,Size(3,3),0,0);
 		//this->morphology_filter(*this,*this,0,2,3);
 		
-		for(int i=thre_min;i<=mid_brgtnss;i+=30)
+		for(int i=thre_min;i<=((mid_brgtnss+60)>255?255:(mid_brgtnss+30));i+=30)
 		{
 			Mat thre_img;
 			vector<vector<Point> > contour_container;
@@ -311,37 +311,61 @@ namespace ats
 					//continue;
 				if(ats::ats_svm::predict<float>(h.get_m_ft())==-1)
 					continue;
+				
+				
+
 
 				//std::cout<<h.get_index()<<" : "<<h.m_ft<<" , "<<h.assess_m_ft();
 				//std::cout<<endl;
 
-				//if(h.assess_m_ft()>300)
+				//if(h.assess_m_ft()>200)
 					//continue;
 				
 				
-				
-				int k=0;
-				std::list<hole>::iterator it;
+			
+				list<hole>::iterator it;
+				vector<list<hole>::iterator> hole_container;
 				bool is_new=true;
+			
+				//get all the holes at the same pos of the new detected hole
 				for(it=hole_set.begin();it!=hole_set.end();it++)
 				{
-					k++;
 					if(hole::same_pos(h,*it))
 					{	
-						it->merge_spe(h);
+						hole_container.push_back(it);
 						is_new=false;
 					}
 				}
+				//merge the holes together
+				if(hole_container.size()>1)
+				{
+					for(int i=1;i<hole_container.size();i++)
+						merge_holes(hole_container[0],hole_container[i]);
+				}
+				if(hole_container.size()>0)
+					hole_container[0]->merge_spe(h);
+
 				if(is_new)
 				{
 					hole_set.push_back(h);
 				}
-					
+
+
+				
 			}
 		}
 		
 		this->is_holes_detected=true;
 		this->calc_max_dis();
+
+
+		/*
+		list<hole>::iterator it;
+		for(it=hole_set.begin();it!=hole_set.end();it++)
+		{
+			cout<<it->get_index()<<": "<<it->get_m_ft(4)<<endl;
+		}
+		*/
 
 		this->reorganize_frags();
 
@@ -377,7 +401,20 @@ namespace ats
 	{
 		imwrite(tar_path,*this);
 	}
-	void ats_frame::label_hole(const hole& h,const Scalar& color)
+
+	void ats_frame::save_hole_set(const string& tar_path)
+	{
+		FILE* fp;
+		fp=fopen(tar_path.c_str(),"w");
+		list<hole>::iterator it;
+		for(it=hole_set.begin();it!=hole_set.end();it++)
+			fprintf(fp,"%d:%f %f %f %f label\n",it->get_index(),it->get_m_ft(1),it->get_m_ft(2),it->get_m_ft(3),it->get_m_ft(4));
+
+		fclose(fp);
+
+	}
+
+	void ats_frame::label_hole(hole& h,const Scalar& color)
 	{
 		vector<Point> contour=h.get_contour();
 		for(int i=0;i<contour.size();i++)
@@ -385,7 +422,7 @@ namespace ats
 		label_pixel(h.get_gp(),color,2);
 	}
 
-	void ats_frame::label_hole(const hole& h,const Scalar& color,int num)
+	void ats_frame::label_hole(hole& h,const Scalar& color,int num)
 	{
 		vector<Point> contour=h.get_contour();
 		for(int i=0;i<contour.size();i++)
@@ -447,29 +484,34 @@ namespace ats
 					cout<<"("<<it1->get_index()<<","<<it2->get_index()<<"):"<<frag_assessment(*it1,*it2)<<endl;
 				}
 				*/
+
+				if(it1->get_index()==12&&it2->get_index()==349)
+					cout<<15355<<endl;
+
 				if(it1->get_index()==it2->get_index())
 				{
 					it2++;
 					continue;
 				}
-				if(calc_dis_sq(it1->get_gp(),it2->get_gp())<(it1->get_area()>it2->get_area()?it1->get_area():it2->get_area()))
+				
+				if(!hole::same_pos(*it1,*it2))
+					it2++;
+				else
+					it2=merge_holes(it1,it2);
+				
+				/*
+				if(calc_dis_sq(it1->get_gp(),it2->get_gp())>(it1->get_area()>it2->get_area()?it1->get_area():it2->get_area()))
 				{
 					it2++;
 					continue;
 				}
+				cout<<"("<<it1->get_index()<<","<<it2->get_index()<<"):"<<frag_assessment(*it1,*it2)<<endl;
 
-				
-				
-				
-				
-
-				//cout<<"("<<it1->get_index()<<","<<it2->get_index()<<"):"<<frag_assessment(*it1,*it2)<<endl;
-
-				if(frag_assessment(*it1,*it2)<0.7)
+				if(frag_assessment(*it1,*it2)<0.02)
 					it2=merge_holes(it1,it2);
 				else
 					it2++;
-
+				*/
 			}
 	}
 
@@ -486,12 +528,12 @@ namespace ats
 			if(it->get_index()==h1.get_index()||it->get_index()==h2.get_index())
 				continue;
 			  
-			theta_diff+=std::abs(hole::shape_ft::calc_theta(h1.get_gp(),it->get_gp())-hole::shape_ft::calc_theta(h2.get_gp(),it->get_gp()))/1.57;
+			theta_diff+=std::abs(hole::shape_ft::calc_theta(h1.get_gp(),it->get_gp())-hole::shape_ft::calc_theta(h2.get_gp(),it->get_gp()))/3.14;
 			rho_diff+=std::abs(calc_dis(h1.get_gp(),it->get_gp())-calc_dis(h2.get_gp(),it->get_gp()))/(this->get_max_dis()+0.0);
 			
 		}
 
-		return theta_diff+rho_diff;
+		return (theta_diff+rho_diff)/(hole_set.size()-2+0.1);
 	}
 
 	int ats_frame::get_dis(const hole& h1,const hole& h2)const
@@ -576,7 +618,7 @@ namespace ats
 
 	int hole::index_generator=0;
 
-	hole::manual_ft::manual_ft(const ats_frame&  frame,const vector<Point>& contour):Mat(1,3,CV_32F)
+	hole::manual_ft::manual_ft(const ats_frame&  frame):Mat(1,4,CV_32F)
 	{
 	
 		this->is_loaded=false;
@@ -592,31 +634,32 @@ namespace ats
 	{
 		this->at<float>(0,dim_i-1)=val;
 	}
-	void hole::manual_ft::calc_ft(const ats_frame&  frame,const vector<Point>& contour)
+	void hole::manual_ft::calc_ft(const ats_frame&  frame,hole& h)
 	{
 		
-		//[body_brgtnss_mid/(con_brgtnss_mid+1),poly_norm,body_brgtnss_mid/(bg_brgtnss_mid+1)]
+		//[body_brgtnss_mid/con_brgtnss_mid,
+		//poly_norm,
+		//body_brgtnss_mid/bg_brgtnss_mid)
+		//body_grad_mid/con_grad_mid,]
 
 		this->is_loaded=true;
 
 		vector<int> contour_brgtnss_arr;
-		vector<int> body_brghtnss_arr;
 		vector<int> bg_brghtnss_arr;
+
+		
 		
 		f_point poly_param(0,0);//length 8
 
-		Rect rect =boundingRect(contour);
+		Rect rect =boundingRect(h.get_contour());
 		
 
-		for(int i=rect.width/4;i<rect.width*3/4;i++)
-			for(int j=rect.height/4;j<rect.height*3/4;j++)
-				body_brghtnss_arr.push_back(frame.get_brgtnss(rect.x+i,rect.y+j));
 				
 		
-		for(int i=0;i<contour.size();i++)
+		for(int i=0;i<h.get_contour().size();i++)
 		{
-			contour_brgtnss_arr.push_back(frame.get_brgtnss(contour[i]));	
-			poly_param+=this->normalize_vector(frame.get_grad_x(contour[i]),frame.get_grad_y(contour[i]));
+			contour_brgtnss_arr.push_back(frame.get_brgtnss((h.get_contour())[i]));	
+			poly_param+=this->normalize_vector(frame.get_grad_x((h.get_contour())[i]),frame.get_grad_y((h.get_contour())[i]));
 		}
 		
 		
@@ -635,25 +678,30 @@ namespace ats
 		
 				
 		std::sort(contour_brgtnss_arr.begin(),contour_brgtnss_arr.end());
-		std::sort(body_brghtnss_arr.begin(),body_brghtnss_arr.end());
+		
 		std::sort(bg_brghtnss_arr.begin(),bg_brghtnss_arr.end());
 
-		set_val(1,body_brghtnss_arr[body_brghtnss_arr.size()/2]/(contour_brgtnss_arr[contour_brgtnss_arr.size()/2]+1.0));
+		
+
+		set_val(1,h.get_body_brghtnss_mid()/(contour_brgtnss_arr[contour_brgtnss_arr.size()/2]+0.1));
 		//set_val(1,(contour_brgtnss_arr[contour_brgtnss_arr.size()/2]+0.0)/(body_brghtnss_arr[body_brghtnss_arr.size()/2]+1));
-		f_point normalized_vec(poly_param.x/contour.size(),poly_param.y/contour.size());
+		f_point normalized_vec(poly_param.x/h.get_contour().size(),poly_param.y/h.get_contour().size());
 		
 		set_val(2,sqrt(normalized_vec.x*normalized_vec.x+normalized_vec.y*normalized_vec.y));
 
-		set_val(3,body_brghtnss_arr[body_brghtnss_arr.size()/2]/(bg_brghtnss_arr[bg_brghtnss_arr.size()/2]+1.0));
+		set_val(3,h.get_body_brghtnss_mid()/(bg_brghtnss_arr[bg_brghtnss_arr.size()/2]+0.1));
+		
+		set_val(4,abs((h.get_body_grad_mid()/(h.get_grad_mid()+0.1))));
+
 
 	}
-	float hole::manual_ft::get_val(const ats_frame&  frame,const vector<Point>& contour,int dim_i)
+	float hole::manual_ft::get_val(const ats_frame&  frame,hole& h,int dim_i)
 	{
 		if(is_loaded)
 			return this->at<float>(0,dim_i-1);
 		else
 		{
-			calc_ft(frame,contour);
+			calc_ft(frame,h);
 			return this->at<float>(0,dim_i-1);
 		}
 	}
@@ -699,7 +747,7 @@ namespace ats
 	{
 		return gp;
 	}
-	vector<Point> hole::get_contour()const
+	vector<Point>& hole::get_contour()
 	{
 		return contour;
 	}
@@ -708,10 +756,12 @@ namespace ats
 	{
 		//return dis_sq(h1.gp,h2.gp)<(h1.area+h2.area)*1.5;
 		//return dis_sq(h1.gp,h2.gp)<(h1.area+h2.area)/2;
-		return dis_sq(h1.gp,h2.gp)<(h1.area<h2.area?h2.area:h1.area);
+		//return dis_sq(h1.gp,h2.gp)<(h1.area<h2.area?h2.area:h1.area);
+		return dis_sq(h1.gp,h2.gp)<(h2.area+h1.area)*0.8;
+
 	}
 
-	hole::hole(ats_frame& frame,const vector<Point>& contour):m_ft(frame,contour),s_ft()
+	hole::hole(ats_frame& frame,const vector<Point>& contour):m_ft(frame),s_ft()
 	{
 		overlapping_num=0;
 
@@ -727,6 +777,9 @@ namespace ats
 		area=contourArea(contour);
 		index=generate_index();
 
+		area_in_series=area;
+		body_brghtnss_mid=-1;
+		body_grad_mid=-1;
 
 	} 
 	hole::hole(const hole& h):m_ft(h.m_ft),s_ft(h.s_ft)
@@ -742,6 +795,11 @@ namespace ats
 		p_frame=h.p_frame;
 		grad_mid=h.grad_mid;
 		con_grad_arr=h.con_grad_arr;
+
+		area_in_series=h.area_in_series;
+
+		body_brghtnss_mid=h.body_brghtnss_mid;
+		body_grad_mid=h.body_grad_mid;
 	}
 	
 
@@ -753,13 +811,9 @@ namespace ats
 				*this=hole(h);
 			return;
 		}
-		
 		for(int i=0;i<h.contour.size();i++)
-			if(p_frame->get_grad(h.contour[i])>this->grad_mid)
+			if(p_frame->get_grad(h.contour[i])>this->get_body_grad_mid()&&p_frame->get_brgtnss(h.get_gp())<this->get_body_brghtnss_mid())
 				push_back(h.contour[i],i==(h.contour.size()-1));
-				
-			
-		
 	}
 
 	void hole::push_back(const Point& p,bool is_last)
