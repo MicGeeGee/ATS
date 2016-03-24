@@ -305,7 +305,7 @@ namespace ats
 
 				//cout<<h.get_index()<<": "<<h.get_m_ft()<<", "<<h.assess_m_ft();
 				//cout<<endl;
-				//if(h.assess_m_ft()>100)
+				//if(h.assess_m_ft()>400)
 					//continue;
 				//if(h.get_m_ft(3)>0.2)
 					//continue;

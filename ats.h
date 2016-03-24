@@ -295,16 +295,17 @@ namespace ats
 					
 				
 				
-				int body_contrast_param=100*get_val(frame,h,1);
-				int cir_param=100*get_val(frame,h,2);
-				int bg_contrast_param=300*get_val(frame,h,3);
-				int grad_contrast_param=200*get_val(frame,h,4);
+				//int body_contrast_param=100*get_val(frame,h,1);
+				//int cir_param=100*get_val(frame,h,2);
+				//int bg_contrast_param=100*get_val(frame,h,3);
+				//int grad_contrast_param=1000*get_val(frame,h,4);
 
 				//int area_param=h.get_area();
 
-				return cir_param+body_contrast_param+bg_contrast_param+grad_contrast_param;
-
-
+				//return cir_param+body_contrast_param+bg_contrast_param+grad_contrast_param;
+				
+				//cout<<"1:"<<get_val(frame,h,1)<<" 2:"<<get_val(frame,h,2)<<endl;
+				return get_val(frame,h,2)+get_val(frame,h,1);
 			}
 
 		private:
@@ -424,6 +425,13 @@ namespace ats
 		int area;
 		Point gp;
 		
+		enum state
+		{
+			nova,//newly detected
+			detected,//already detected
+			collapse//area decreasing
+		};
+
 		int area_in_series;
 
 		int body_brghtnss_mid;
@@ -726,7 +734,7 @@ namespace ats
 		
 		static bool run()
 		{
-			total_cost=calc_matching_cost();
+			calc_matching_cost();
 
 			current_frame->set_overlapping_num(overlapping_num);
 
@@ -805,8 +813,9 @@ namespace ats
 			float res=hungarian<float>(cost_m,row_res,col_res);
 			res/=cost_m.cols;
 
+			total_cost=res;
 
-			area_matching(file_path);
+			
 
 			//if the matching method fails(i.e. the position pattern has changed a lot)
 			//then the overlapping detection will not be run.
@@ -831,7 +840,7 @@ namespace ats
 
 
 			handle_matching_res(file_path);
-
+			area_matching(file_path);
 
 			//return total matching cost
 			return res;
@@ -840,6 +849,14 @@ namespace ats
 		static void area_matching(const string& file_path)
 		{
 			FILE* fp=fopen(file_path.c_str(),"a");
+
+			printf("#%d & #%d:\n",last_frame->get_index(),current_frame->get_index());
+			printf("total matching cost:%f\n",total_cost);
+			printf("matching pairs(last,current:last area, current area):\n");
+
+			fprintf(fp,"#%d & #%d:\n",last_frame->get_index(),current_frame->get_index());
+			fprintf(fp,"total matching cost:%f\n",total_cost);
+			fprintf(fp,"matching pairs(last,current:last area, current area):\n");
 			for(int i=0;i<cost_m.rows;i++)
 			{
 	
@@ -849,16 +866,23 @@ namespace ats
 				
 				int area_c=(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area();
 				int area_l=(last_frame->get_hole(revindex_map_l[i]))->get_area_in_series();
+
+
 				if(area_c>area_l)
 					(current_frame->get_hole(revindex_map_c[row_res[i]]))->set_area_in_series(area_c);
 				else
 					(current_frame->get_hole(revindex_map_c[row_res[i]]))->set_area_in_series(area_l);
-
+				
+				
 				printf("(%d,%d):(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]],area_l,area_c);
 				fprintf(fp,"(%d,%d):(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]],area_l,area_c);
 			}
 			fclose(fp);
 		
+
+			for(int i=0;i<cost_m.rows;i++)
+				fprintf(fp,"(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]]);
+
 		}
 
 		static void handle_matching_res()

@@ -19,11 +19,11 @@
   <sv_total>1</sv_total>
   <support_vectors>
     <_>
-      1.96288228e+000 4.83374409e-002 9.15179789e-001 7.63726160e-002</_></support_vectors>
+      2.63142705e+000 2.77165979e-001 5.69076002e-001 5.04545033e-001</_></support_vectors>
   <decision_functions>
     <_>
       <sv_count>1</sv_count>
-      <rho>1.3012782385695720e+000</rho>
+      <rho>1.5122039057314396e+000</rho>
       <alpha>
         1.</alpha></_></decision_functions></opencv_ml_svm>
 </opencv_storage>
