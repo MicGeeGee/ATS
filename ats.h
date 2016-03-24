@@ -78,7 +78,7 @@ namespace ats
 		void enroll_overlapping(int index);
 
 		void set_overlapping_num(int n);
-		void update_hole(int index,const hole& h);
+		
 
 		int get_index()
 		{
@@ -305,7 +305,8 @@ namespace ats
 				//return cir_param+body_contrast_param+bg_contrast_param+grad_contrast_param;
 				
 				//cout<<"1:"<<get_val(frame,h,1)<<" 2:"<<get_val(frame,h,2)<<endl;
-				return get_val(frame,h,2)+get_val(frame,h,1);
+				return 100*get_val(frame,h,1)+1*get_val(frame,h,2)+1*get_val(frame,h,3)+1*get_val(frame,h,4);
+				
 			}
 
 		private:
@@ -382,22 +383,9 @@ namespace ats
 		{
 			return overlapping_num;
 		}
-		void update(const hole& h)
-		{
-			if(h.area>this->area)
-				this->area=h.area;
-			this->overlapping_num=h.overlapping_num;
-		}
+		
 
-		void set_area_in_series(int val)
-		{
-			area_in_series=val;
-		}
-		int get_area_in_series()const
-		{
-			return area_in_series;
-		}
-
+		
 		int get_body_brghtnss_mid()
 		{
 			if(body_brghtnss_mid>0)
@@ -419,20 +407,69 @@ namespace ats
 			}
 		}
 
+		bool update_state(hole* precur,float matching_cost,float thre)
+		{
+			//return:ture for overlapping
+
+			//only consider under the condition 
+			//that there is a stable match
+			if(!precur)
+				return false;
+			if(matching_cost>1)
+				return false;
+
+			//first inherit the state:
+			state=precur->state;
+			//second do the transmission:
+			switch (precur->state)
+			{
+			case ats::hole::nova:
+				state=hole::detected;
+				break;
+			case ats::hole::detected:
+				{
+					if(area<=(precur->area*0.7))
+					{
+						state=hole::collapse;
+						area_cache=precur->area;
+					}
+
+					float factor=std::pow(2.7,(-1)*precur->area/83.0)+1;
+					if(area>=((precur->area)*factor))
+						return true;
+				}
+				break;
+			case ats::hole::collapse:
+				area_cache=precur->area_cache;
+				if(area>=precur->area_cache)
+					state=hole::detected;
+				break;
+			default:
+				break;
+			}
+			return false;
+		}
+
+		
+		int get_hole_state()
+		{
+			return state;
+		}
 
 	private:
 		int index;
 		int area;
 		Point gp;
 		
-		enum state
+		enum hole_state
 		{
 			nova,//newly detected
 			detected,//already detected
 			collapse//area decreasing
-		};
+		}state;
 
-		int area_in_series;
+		int area_cache;//area cache for collapsed hole
+		
 
 		int body_brghtnss_mid;
 		int body_grad_mid;
@@ -732,57 +769,29 @@ namespace ats
 			current_frame=p_frame;
 		}
 		
-		static bool run()
+		static void run()
 		{
-			calc_matching_cost();
-
+			bool is_successful=calc_matching_cost();
 			current_frame->set_overlapping_num(overlapping_num);
 
-
-			if(total_cost==-1||total_cost>0.3)
-				return	false;//means the hole num has decreased.
-			else
-				return true;
-		}
-		/*
-		static void print_result()
-		{
-			cout<<"#"<<last_frame->get_index()<<" & "<<current_frame->get_index()<<":"<<endl;
-			//matching result:
-			cout<<"matching pairs(last,current):"<<endl;
-			for(int i=0;i<cost_m.rows;i++)
-				cout<<"("<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<")"<<endl;
-			cout<<"total matching cost:"<<total_cost<<endl;
-			cout<<"cost matrix:"<<endl<<cost_m<<endl;
-
-			//index map:
-			cout<<"row index:"<<endl;
-			for(int i=0;i<cost_m.rows;i++)
-				cout<<revindex_map_l[i]<<endl;
-			cout<<"column index:"<<endl;
-			for(int i=0;i<cost_m.rows;i++)
-				cout<<revindex_map_c[i]<<endl;
-		}*/
-		static void print_result()
-		{
-			cout<<"#"<<last_frame->get_index()<<" & "<<current_frame->get_index()<<":"<<total_cost<<endl;
-			//cout<<cost_m<<endl;
-
-			FILE* fp=fopen(file_path.c_str(),"a");
-
-			fprintf(fp,"#%d & #%d:\n",last_frame->get_index(),current_frame->get_index());
-			fprintf(fp,"matching pairs(last,current):\n");
-			for(int i=0;i<cost_m.rows;i++)
-				fprintf(fp,"(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]]);
-			fprintf(fp,"total matching cost:%f\n",total_cost);
 			
-		
+			if(!is_successful)
+				return;
 
-			fclose(fp);
-		
+			
+
+			cout<<cost_m<<endl;
+
+			print_result(file_path);
+			
+			
+
 		}
+		
+		
 	private:
 		static int overlapping_num;
+		static Mat cost_m;//row index for last frame, column index of current one
 
 		static string file_path;
 
@@ -794,7 +803,7 @@ namespace ats
 		static int row_res[100000];
 		static int col_res[100000];
 
-		static map<int,int> revindex_map_c;//i to index
+		static map<int,int> revindex_map_c;//cost_m index to hole index
 		static map<int,int> revindex_map_l;
 
 		static ats_frame* last_frame;
@@ -803,12 +812,12 @@ namespace ats
 		static bool is_c_loaded;
 		
 
-		static float calc_matching_cost()
+		static bool calc_matching_cost()
 		{
 		    bool is_successfull=calc_cost_m();
 			
 			if(!is_successfull)
-				return -1;
+				return false;
 
 			float res=hungarian<float>(cost_m,row_res,col_res);
 			res/=cost_m.cols;
@@ -819,8 +828,8 @@ namespace ats
 
 			//if the matching method fails(i.e. the position pattern has changed a lot)
 			//then the overlapping detection will not be run.
-			if(res>0.3)
-				return -1;
+			//if(res>0.3)
+				//return -1;
 
 			/*
 			//for those holes matching dumppy holes
@@ -840,13 +849,14 @@ namespace ats
 
 
 			handle_matching_res(file_path);
-			area_matching(file_path);
+			//area_matching(file_path);
 
 			//return total matching cost
-			return res;
+			return true;
 		}
 
-		static void area_matching(const string& file_path)
+		
+		static void print_result(const string& file_path)
 		{
 			FILE* fp=fopen(file_path.c_str(),"a");
 
@@ -862,57 +872,26 @@ namespace ats
 	
 				if(revindex_map_l[i]==-1)
 					continue;
-
 				
+				int area_l=(last_frame->get_hole(revindex_map_l[i]))->get_area();
 				int area_c=(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area();
-				int area_l=(last_frame->get_hole(revindex_map_l[i]))->get_area_in_series();
-
-
-				if(area_c>area_l)
-					(current_frame->get_hole(revindex_map_c[row_res[i]]))->set_area_in_series(area_c);
-				else
-					(current_frame->get_hole(revindex_map_c[row_res[i]]))->set_area_in_series(area_l);
 				
-				
-				printf("(%d,%d):(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]],area_l,area_c);
-				fprintf(fp,"(%d,%d):(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]],area_l,area_c);
+
+				printf("(%d,%d,%d,%d):(%d,%d)\n",revindex_map_l[i],(last_frame->get_hole(revindex_map_l[i]))->get_hole_state(),
+					revindex_map_c[row_res[i]],(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_hole_state(),area_l,area_c);
+				fprintf(fp,"(%d,%d,%d,%d):(%d,%d)\n",revindex_map_l[i],(last_frame->get_hole(revindex_map_l[i]))->get_hole_state(),
+					revindex_map_c[row_res[i]],(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_hole_state(),area_l,area_c);
 			}
 			fclose(fp);
-		
+			
 
 			for(int i=0;i<cost_m.rows;i++)
 				fprintf(fp,"(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]]);
 
 		}
+		
 
-		static void handle_matching_res()
-		{
-			for(int i=0;i<cost_m.rows;i++)
-			{
-				if(revindex_map_l[i]==-1)
-					continue;
-
-				//first, update all the overlapping numbers of the current frame to the ones of the previous frame
-				current_frame->update_hole(revindex_map_c[row_res[i]],*(last_frame->get_hole(revindex_map_l[i])));
-				//then judge overlappings and make increment
-				if(judge_overlapping(*(last_frame->get_hole(revindex_map_l[i])),*(current_frame->get_hole(revindex_map_c[row_res[i]]))))
-				{
-					cout<<"new overlapping location(pre_index,cur_index:pre_area->cur_area):"<<endl;
-					cout<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<":"
-					<<last_frame->get_hole(revindex_map_l[i])->get_area()<<"->"<<(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area()<<endl;
-					current_frame->enroll_overlapping(revindex_map_c[row_res[i]]);
-				}
-
-				int area_c=(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area();
-				int area_l=(last_frame->get_hole(revindex_map_l[i]))->get_area_in_series();
-				if(area_c>area_l)
-					(current_frame->get_hole(revindex_map_c[row_res[i]]))->set_area_in_series(area_c);
-				else
-					(current_frame->get_hole(revindex_map_c[row_res[i]]))->set_area_in_series(area_l);
-
-
-			}
-		}
+		
 		static void handle_matching_res(const string& file_path)
 		{
 			FILE* fp=fopen(file_path.c_str(),"a");
@@ -921,10 +900,20 @@ namespace ats
 				if(revindex_map_l[i]==-1)
 					continue;
 
-				//first, update all the overlapping numbers of the current frame to the ones of the previous frame
-				current_frame->update_hole(revindex_map_c[row_res[i]],*(last_frame->get_hole(revindex_map_l[i])));
-				//then judge overlappings and make increment
-				if(judge_overlapping(*(last_frame->get_hole(revindex_map_l[i])),*(current_frame->get_hole(revindex_map_c[row_res[i]]))))
+				if(revindex_map_l[i]==853&&revindex_map_c[row_res[i]]==904)
+				{
+					cout<<(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_m_ft(2)<<endl;
+					cout<<last_frame->get_hole(revindex_map_l[i])->get_m_ft(2)<<endl;
+
+					cout<<42815<<endl;
+				}
+
+				//judge whether there are overlappings and make increment
+				bool is_overlapping=(current_frame->get_hole(revindex_map_c[row_res[i]]))->update_state(&(*(last_frame->get_hole(revindex_map_l[i]))),
+					cost_m.at<float>(i,row_res[i]),1);
+
+
+				if(is_overlapping)
 				{
 					overlapping_num++;
 
@@ -932,11 +921,7 @@ namespace ats
 					cout<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<":"
 					<<last_frame->get_hole(revindex_map_l[i])->get_area()<<"->"<<(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area()<<endl;
 					
-					fprintf(fp,"new overlapping location(pre_index,cur_index:pre_area->cur_area):\n%d,%d:%d->%d\n",revindex_map_l[i],revindex_map_c[row_res[i]],last_frame->get_hole(revindex_map_l[i])->get_area_in_series(),(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area());
-
-					//current_frame->enroll_overlapping(revindex_map_c[row_res[i]]);
-
-					
+					fprintf(fp,"new overlapping location(pre_index,cur_index:pre_area->cur_area):\n%d,%d:%d->%d\n",revindex_map_l[i],revindex_map_c[row_res[i]],last_frame->get_hole(revindex_map_l[i])->get_area(),(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area());
 				}
 
 
@@ -954,10 +939,7 @@ namespace ats
 	
 
 
-		static bool judge_overlapping(const hole& pre_h,const hole& cur_h)
-		{
-			return cur_h.get_area()>pre_h.get_area_in_series()*2.5&&calc_dis_sq(pre_h.get_gp(),cur_h.get_gp())>=2;
-		}
+		
 
 
 		
@@ -1003,7 +985,10 @@ namespace ats
 				for(int i=m;i<n;i++)
 					for(int j=0;j<m;j++)
 					{
+						//consider that we only talk about the condition
+						//that hole number in last frame <= that in current one
 						revindex_map_l[i]=-1;
+
 						//cost_m.at<float>(i,j)=inf*10000;
 						cost_m.at<float>(i,j)=inf;
 					}
@@ -1022,7 +1007,7 @@ namespace ats
 			}
 
 		}
-		static Mat cost_m;//row index for last frame, column index of current one
+		
 		static float chi_sq_test(hole& h1,hole& h2)
 		{
 			float val=0;

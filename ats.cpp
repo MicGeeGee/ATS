@@ -260,15 +260,7 @@ namespace ats
 		overlapping_num=n;
 	}
 
-	void ats_frame::update_hole(int index,const hole& h)
-	{
-		if(overlapping_list.find(index)==overlapping_list.end()&&h.get_overlapping_num()>0)
-			overlapping_list.insert(index);
-		int incre_num=(h.get_overlapping_num()-ptr_map[index]->get_overlapping_num());
-		overlapping_num+=incre_num;
-		ptr_map[index]->update(h);
-			
-	}
+	
 
 
 	void ats_frame::detect_holes(int thre_min)
@@ -305,7 +297,7 @@ namespace ats
 
 				//cout<<h.get_index()<<": "<<h.get_m_ft()<<", "<<h.assess_m_ft();
 				//cout<<endl;
-				//if(h.assess_m_ft()>400)
+				//if(h.assess_m_ft()>0.5)
 					//continue;
 				//if(h.get_m_ft(3)>0.2)
 					//continue;
@@ -340,7 +332,18 @@ namespace ats
 				if(hole_container.size()>1)
 				{
 					for(int i=1;i<hole_container.size();i++)
-						merge_holes(hole_container[0],hole_container[i]);
+					{
+						if(hole_container[0]->assess_m_ft()<=hole_container[i]->assess_m_ft())
+							hole_set.erase(hole_container[i]);
+						else
+						{
+							hole_set.erase(hole_container[0]);
+							hole_container[0]=hole_container[i];
+						}
+
+						//merge_holes(hole_container[0],hole_container[i]);
+					}
+						
 				}
 				if(hole_container.size()>0)
 					hole_container[0]->merge_spe(h);
@@ -367,7 +370,7 @@ namespace ats
 		}
 		*/
 
-		this->reorganize_frags();
+		//this->reorganize_frags();
 
 		cout<<"The end."<<endl;
 		
@@ -594,6 +597,7 @@ namespace ats
 	{
 		//make *p_guest incorprated into *p_host,and then erase p_guest
 
+		
 		p_host->incorporate(*p_guest);
 		return hole_set.erase(p_guest);
 	}
@@ -777,9 +781,13 @@ namespace ats
 		area=contourArea(contour);
 		index=generate_index();
 
-		area_in_series=area;
+		
 		body_brghtnss_mid=-1;
 		body_grad_mid=-1;
+
+		state=hole_state::nova;
+
+		area_cache=0;
 
 	} 
 	hole::hole(const hole& h):m_ft(h.m_ft),s_ft(h.s_ft)
@@ -796,10 +804,14 @@ namespace ats
 		grad_mid=h.grad_mid;
 		con_grad_arr=h.con_grad_arr;
 
-		area_in_series=h.area_in_series;
+		
 
 		body_brghtnss_mid=h.body_brghtnss_mid;
 		body_grad_mid=h.body_grad_mid;
+
+		state=h.state;
+
+		area_cache=h.area_cache;
 	}
 	
 
@@ -811,9 +823,11 @@ namespace ats
 				*this=hole(h);
 			return;
 		}
+		/*
 		for(int i=0;i<h.contour.size();i++)
 			if(p_frame->get_grad(h.contour[i])>this->get_body_grad_mid()&&p_frame->get_brgtnss(h.get_gp())<this->get_body_brghtnss_mid())
 				push_back(h.contour[i],i==(h.contour.size()-1));
+		*/
 	}
 
 	void hole::push_back(const Point& p,bool is_last)

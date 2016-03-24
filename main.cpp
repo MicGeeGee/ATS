@@ -71,6 +71,8 @@ namespace ats
 		int i=start_index;
 		while(true)
 		{
+
+			
 			if(i==start_index)
 			{
 				sprintf(file_path,"E:\\OPENCV_WORKSPACE\\Image_DataSet\\1\\Img_%d.jpg",i++);
@@ -85,8 +87,7 @@ namespace ats
 				return;
 			}
 
-			if(pframe_c->get_index()==95)
-				cout<<95<<endl;
+			
 
 
 			if(pframe_l->get_index()==0)
@@ -96,8 +97,10 @@ namespace ats
 
 			holes_matching::load_last_frame(pframe_l);
 			holes_matching::load_current_frame(pframe_c);
-			bool matching_res=holes_matching::run();
-			//holes_matching::print_result();
+			holes_matching::run();
+			
+
+			
 			
 			if(pframe_l->get_index()==0)
 			{
@@ -129,13 +132,14 @@ namespace ats
 		ats::ats_frame frame(file_path);
 		frame.detect_holes();
 		frame.show();
-
+		
 		
 		sprintf(file_path,"C:\\Users\\Administrator\\Desktop\\img\\img_%d.jpg",img_index);
 		frame.save(file_path);
 		frame.save_hole_set("hole_set.txt");
 
 		cout<<ats::ats_svm::get_suprt_vecs()<<endl;
+		waitKey();
 	}
 	
 }
@@ -144,10 +148,10 @@ namespace ats
 
 int main()
 {
-	//ats::sing_img_process(182);
+	//ats::sing_img_process(207);
 	
-	ats::patch_process(1);
-	waitKey();
+	ats::patch_process(210);
+	
 
 	
 	return 0;
