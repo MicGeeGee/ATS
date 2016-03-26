@@ -522,22 +522,47 @@ namespace ats
 	class ats_svm
 	{
 	public:
-		static list<Mat> training_data;
-		static list<int> labels;
-		static list<Mat> test_data;
-		
 
+		struct param_pair
+		{
+			float C;
+			float gama;
+			param_pair()
+			{
+			}
+			param_pair(float C,float gama)
+			{
+				this->C=C;
+				this->gama=gama;
+			}
+			param_pair(const param_pair& p)
+			{
+				C=p.C;
+				gama=p.gama;
+			}
+		};
+
+		static vector<Mat> training_data;
+		
+		static vector<Mat> labels;
+		
+		static vector<Mat> test_data;
+		
 		static void load(const string& file_name)
 		{
 			classifier=Algorithm::load<ml::SVM>(file_name);
-			
 			is_trained=true;
 		}
 
 		static void save(const string& file_name)
 		{
 			if(is_trained)
+			{
 				classifier->save(file_name);
+
+				
+				
+			}
 			else
 			{
 				cout<<"Error in saving: it has not been trained."<<endl;
@@ -545,27 +570,7 @@ namespace ats
 			}
 		}
 		
-		static void save_data(const string& file_name)
-		{
-			FILE* fp;
-			fp=fopen(file_name.c_str(),"w");
-			list<Mat>::iterator it=training_data.begin();
-			list<int>::iterator lb_it=labels.begin();
-			for(;it!=training_data.end();it++,lb_it++)
-				fprintf(fp,"%f %f %f %f %d\n",it->at<float>(0,0),it->at<float>(0,1),it->at<float>(0,2),it->at<float>(0,3),*lb_it);
-			fclose(fp);
-		}
-		static void add_data(const string& file_name)
-		{
-			FILE* fp;
-			fp=fopen(file_name.c_str(),"a");
-			list<Mat>::iterator it=training_data.begin();
-			list<int>::iterator lb_it=labels.begin();
-			for(;it!=training_data.end();it++,lb_it++)
-				fprintf(fp,"%f %f %f %f %d\n",it->at<float>(0,0),it->at<float>(0,1),it->at<float>(0,2),it->at<float>(0,3),*lb_it);
-			fclose(fp);
-		}
-
+		
 
 		static void load_data(const string& file_name)
 		{
@@ -574,22 +579,26 @@ namespace ats
 			float data[4];
 			int label;
 			int num;
+			int index;
+			char c;
 			while(true)
 			{
-				num=fscanf(fp,"%f%f%f%f%d",&data[0],&data[1],&data[2],&data[3],&label);
-				if(num<4)
+				num=fscanf(fp,"%d%c%c%c%f%f%f%f%d",&index,&c,&c,&c,&data[0],&data[1],&data[2],&data[3],&label);
+				if(num<6)
 					break;
 				
-				Mat data_m(1,4,CV_32F);
+				Mat data_m(1,4,CV_32FC1);
 				data_m.at<float>(0,0)=data[0];
 				data_m.at<float>(0,1)=data[1];
 				data_m.at<float>(0,2)=data[2];
 				data_m.at<float>(0,3)=data[3];
 				training_data.push_back(data_m);
-				labels.push_back(label);
+				Mat label_m(1,1,CV_32SC1);
+				label_m.at<int>(0,0)=label;
+				labels.push_back(label_m);
 			}
 
-
+			
 			fclose(fp);
 		}
 		
@@ -599,16 +608,31 @@ namespace ats
 			return support_vectors;
 		}
 
-		template<typename _type> 
+
+
+		static void argument_convert(const vector<Mat>& src,Mat& dst)
+		{
+			if(src.empty())
+			{
+				cout<<"Error in converting: source mat is emtpy."<<endl;
+				return;
+			}
+			dst.release();
+
+			vector<Mat>::const_iterator it=src.begin();
+			
+			for(;it<src.end();it++)
+				dst.push_back(*it);
+		}
+
+
+
 		static int predict(const Mat& vec)
 		{
 			if(is_trained)
 			{
-				Mat dst;
-				param_convert<_type>(vec,dst);
-
-				Mat res(1, 1, CV_32F);
-				classifier->predict(dst,res);
+				Mat res;
+				classifier->predict(vec,res);
 				return res.at<float>(0,0);
 			}
 			else
@@ -619,136 +643,344 @@ namespace ats
 		}
 		static void predict(const Mat& vecs,Mat& res)
 		{
-			res=Mat(vecs.rows, 1, CV_32F);
-
 			if(is_trained)
-				classifier->predict(vecs,res);
+			{
+				Mat dst;
+				classifier->predict(vecs,dst);
+				dst.convertTo(res,CV_32SC1);
+			}
 			else
 			{
 				cout<<"Error in predicting: it has not been trained."<<endl;
-				res=Mat::zeros(vecs.rows,1,CV_32F);
+				res=Mat::zeros(vecs.rows,1,CV_32FC1);
 				return;
 			}
 		}
+		
 
-		template<typename _type> 
-		static Mat predict(const list<Mat>& test_data_list)
-		{
-			if(test_data_list.empty())
-			{
-				cout<<"Error in predicting: test data is empty."<<endl;
-				return Mat();
-			}
-			int num=test_data_list.size();
-			int n_dim=test_data_list.front().cols;
 
-			Mat test_data(num,n_dim,CV_32FC1);
 
-			list<Mat>::const_iterator it=test_data_list.begin();
-			int k=0;
-
-			for(;it!=test_data_list.end();it++,k++)
-			{	
-				for(int i=0;i<n_dim;i++)
-					test_data.at<float>(k,i)=it->at<_type>(0,i);
-			}
-			Mat res;
-			predict(test_data,res);
-			return res;
-		}
-
-		static void train(const Mat& training_data,const Mat& labels)
+		
+		static void train_LINEAR(const Mat& training_data,const Mat& labels,float C)
 		{
 			classifier->setType(ml::SVM::Types::C_SVC);
-			//classifier->setKernel(ml::SVM::KernelTypes::RBF);
 			classifier->setKernel(ml::SVM::KernelTypes::LINEAR);
-
-			//classifier->setGamma(20);  // for poly/rbf/sigmoid
-			//classifier->setC(7);       // for CV_classifier_C_SVC, CV_classifier_EPS_SVR and CV_classifier_NU_SVR
+			classifier->setC(C);       // for CV_classifier_C_SVC, CV_classifier_EPS_SVR and CV_classifier_NU_SVR
 			classifier->setTermCriteria(TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 1000, 1E-6));
 			classifier->train(training_data, ml::SampleTypes::ROW_SAMPLE, labels);
-
 			is_trained=true;
 			support_vectors = classifier->getSupportVectors();
 		}
-		
-		template<typename _type> 
-		static void train(const list<Mat>& training_data_list,const list<int>& label_list)
+		static void train_LINEAR(const vector<Mat>& training_data,const vector<Mat>& labels,float C)
 		{
-			if(training_data_list.empty())
+			Mat dst_sample;
+			Mat dst_labels;
+			argument_convert(training_data,dst_sample);
+			argument_convert(labels,dst_labels);
+			train_LINEAR(dst_sample,dst_labels,C);
+		}
+		static void train_LINEAR(float C)
+		{
+			Mat dst_sample;
+			Mat dst_labels;
+			argument_convert(training_data,dst_sample);
+			argument_convert(labels,dst_labels);
+			train_LINEAR(dst_sample,dst_labels,C);
+		}
+
+
+
+
+
+		static void train_RBF(const Mat& training_data,const Mat& labels,float C,float gama)
+		{
+			classifier->setType(ml::SVM::Types::C_SVC);
+			classifier->setKernel(ml::SVM::KernelTypes::RBF);
+			classifier->setC(C);       // for CV_classifier_C_SVC, CV_classifier_EPS_SVR and CV_classifier_NU_SVR
+			classifier->setGamma(gama);
+			classifier->setTermCriteria(TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 1000, 1E-6));
+			classifier->train(training_data, ml::SampleTypes::ROW_SAMPLE, labels);
+			is_trained=true;
+			support_vectors = classifier->getSupportVectors();
+		}
+		static void train_RBF(const vector<Mat>& training_data,const vector<Mat>& labels,float C,float gama)
+		{
+			Mat dst_sample;
+			Mat dst_labels;
+			argument_convert(training_data,dst_sample);
+			argument_convert(labels,dst_labels);
+			train_RBF(dst_sample,dst_labels,C,gama);
+		}
+		static void train_RBF(float C,float gama)
+		{
+			Mat dst_sample;
+			Mat dst_labels;
+			argument_convert(training_data,dst_sample);
+			argument_convert(labels,dst_labels);
+			train_RBF(dst_sample,dst_labels,C,gama);
+		}
+
+
+	
+		//return probability of correct recoginition
+		static float cross_validation_RBF(float C,float gama)
+		{
+			int n_correct=0;
+			int n_test=0;
+
+			int sample_num=training_data.size();
+
+			int delta=sample_num/10;
+
+			int index_ub[]={delta-1,2*delta-1,3*delta-1,4*delta-1,5*delta-1,
+								6*delta-1,7*delta-1,8*delta-1,9*delta-1,sample_num-1};
+			int index_lb[]={0,delta,2*delta,3*delta,4*delta ,5*delta ,
+								6*delta ,7*delta ,8*delta ,9*delta};
+			int combinations[][3]={0,1,2,
+								   1,2,3,
+								   2,3,4,
+								   3,4,5,
+								   4,5,6,
+								   5,6,7,
+								   6,7,8,
+								   7,8,9,
+								   8,9,0,
+								   9,0,1};
+			int combination_size=10;
+
+			for(int i=0;i<combination_size;i++)
 			{
-				cout<<"Error in training: training data is empty."<<endl;
-				return;
-			}
-			int num=training_data_list.size();
-			int n_dim=training_data_list.front().cols;
+				list<int> index_set;
+				for(int j=0;j<3;j++)
+					for(int k=index_lb[combinations[i][j]];k<=index_ub[combinations[i][j]];k++)
+						index_set.push_back(k);
+				Mat testing_data;
+				Mat testing_labels;
+				Mat actual_labels;
+				combine_vectors(index_set,testing_data);
+				combine_labels(index_set,actual_labels);
 
-			Mat training_data(num,n_dim,CV_32FC1);
-			Mat labels(num, 1, CV_32SC1);
+				index_set.clear();
 
-			list<Mat>::const_iterator t_it=training_data_list.begin();
-			list<int>::const_iterator l_it=label_list.begin();
+				for(int m=0;m<10;m++)
+				{
+					if(m!=combinations[i][0]&&m!=combinations[i][1]&&m!=combinations[i][2])
+						for(int k=index_lb[m];k<=index_ub[m];k++)
+								index_set.push_back(k);
+				}
+				Mat sample_data;
+				Mat sample_labels;
+				combine_vectors(index_set,sample_data);
+				combine_labels(index_set,sample_labels);
 
-			int k=0;
-			for(;t_it!=training_data_list.end();t_it++,l_it++,k++)
-			{	
-				for(int i=0;i<n_dim;i++)
-					training_data.at<float>(k,i)=t_it->at<_type>(0,i);
+
+				train_RBF(sample_data,sample_labels,C,gama);
+				predict(testing_data,testing_labels);
 				
-				labels.at<int>(k,0)=*l_it;
+
+				for(int j=0;j<testing_labels.rows;j++)
+				{
+					n_test++;
+					if(testing_labels.at<int>(j,0)==actual_labels.at<int>(j,0))
+						n_correct++;
+					
+				}
+
+
 			}
-			train(training_data,labels);
+			return n_correct/(n_test+0.0);
+		}
+
+
+		//return probability of correct recoginition
+		static float cross_validation_LINEAR(float C)
+		{
+			int n_correct=0;
+			int n_test=0;
+
+			int sample_num=training_data.size();
+
+			int delta=sample_num/10;
+
+			int index_ub[]={delta-1,2*delta-1,3*delta-1,4*delta-1,5*delta-1,
+								6*delta-1,7*delta-1,8*delta-1,9*delta-1,sample_num-1};
+			int index_lb[]={0,delta,2*delta,3*delta,4*delta ,5*delta ,
+								6*delta ,7*delta ,8*delta ,9*delta};
+			int combinations[][3]={0,1,2,
+								   1,2,3,
+								   2,3,4,
+								   3,4,5,
+								   4,5,6,
+								   5,6,7,
+								   6,7,8,
+								   7,8,9,
+								   8,9,0,
+								   9,0,1};
+			int combination_size=10;
+
+			for(int i=0;i<combination_size;i++)
+			{
+				list<int> index_set;
+				for(int j=0;j<3;j++)
+					for(int k=index_lb[combinations[i][j]];k<=index_ub[combinations[i][j]];k++)
+						index_set.push_back(k);
+				Mat testing_data;
+				Mat testing_labels;
+				Mat actual_labels;
+				combine_vectors(index_set,testing_data);
+				combine_labels(index_set,actual_labels);
+
+				index_set.clear();
+
+				for(int m=0;m<10;m++)
+				{
+					if(m!=combinations[i][0]&&m!=combinations[i][1]&&m!=combinations[i][2])
+						for(int k=index_lb[m];k<=index_ub[m];k++)
+								index_set.push_back(k);
+				}
+				Mat sample_data;
+				Mat sample_labels;
+				combine_vectors(index_set,sample_data);
+				combine_labels(index_set,sample_labels);
+
+
+				train_LINEAR(sample_data,sample_labels,C);
+				predict(testing_data,testing_labels);
+				
+
+				for(int j=0;j<testing_labels.rows;j++)
+				{
+					n_test++;
+					if(testing_labels.at<int>(j,0)==actual_labels.at<int>(j,0))
+						n_correct++;
+					
+				}
+
+
+			}
+			return n_correct/(n_test+0.0);
+		}
+
+
+		static float grid_search_LINEAR(int C_lb_exp, int C_ub_exp, float& res_C)
+		{
+			float accurracy=0;
+
+			list<float> container;
+			for(int i=C_lb_exp;i<=C_ub_exp;i+=1)
+				container.push_back(pow(2,i));
+			list<float>::iterator it;
+			for(it=container.begin();it!=container.end();it++)
+			{
+				float res=cross_validation_LINEAR(*it);
+				if(res>accurracy)
+				{
+					accurracy=res;
+					res_C=*it;
+				}
+			
+			}
+
+			container.clear();
+			accurracy=0;
+			for(float i=res_C-2;i<=res_C+2;i+=0.25)
+				container.push_back(pow(2,i));
+			for(it=container.begin();it!=container.end();it++)
+			{
+				float res=cross_validation_LINEAR(*it);
+				if(res>accurracy)
+				{
+					accurracy=res;
+					res_C=*it;
+				}
+			}
+
+			return accurracy;
+
+		}
+
+
+		static float corse_grid_search(int C_lb_exp, int C_ub_exp,int gama_lb_exp, int gama_ub_exp,param_pair& dst)
+		{
+			list<param_pair> pair_container;
+			generate_corse_grid(C_lb_exp,C_ub_exp,gama_lb_exp,gama_ub_exp,pair_container);
+			float accurracy=0;
+			list<param_pair>::iterator it;
+			for(it=pair_container.begin();it!=pair_container.end();it++)
+			{
+				
+				float res=cross_validation_RBF(it->C,it->gama);
+				if(res>accurracy)
+				{
+					accurracy=res;
+					dst=*it;
+				}
+			}
+			return accurracy;
+		}
+		static float fine_grid_search(int C_exp, int gama_exp,param_pair& dst)
+		{
+			list<param_pair> pair_container;
+			generate_fine_grid(C_exp,gama_exp,pair_container);
+			float accurracy=0;
+			list<param_pair>::iterator it;
+			for(it=pair_container.begin();it!=pair_container.end();it++)
+			{
+				
+				float res=cross_validation_RBF(it->C,it->gama);
+				if(res>accurracy)
+				{
+					accurracy=res;
+					dst=*it;
+				}
+			}
+			return accurracy;
 		}
 		
-		
-		
+
+
+
 	private:
-		template<typename _type> 
-		static void param_convert(const Mat& src,Mat& dst)
+
+		
+
+		static void generate_corse_grid(int C_lb_exp, int C_ub_exp,int gama_lb_exp, int gama_ub_exp, list<param_pair>& res)
 		{
-			if(src.empty())
-			{
-				cout<<"Error in converting: source mat is emtpy."<<endl;
-				return;
-			}
-			
-			int num=src.rows;
-			int n_dim=src.cols;
-
-			dst=Mat(num,n_dim,CV_32FC1);
-
-			for(int i=0;i<num;i++)
-				for(int j=0;j<n_dim;j++)
-					dst.at<float>(i,j)=src.at<_type>(i,j);
-
-			
+			for(int i=C_lb_exp;i<=C_ub_exp;i+=2)
+				for(int j=gama_lb_exp;j<=gama_ub_exp;j+=2)
+					res.push_back(param_pair(std::pow(2,i),std::pow(2,j)));
 		}
-		template<typename _type> 
-		static void param_convert(const list<Mat>& src,Mat& dst)
+		static void generate_fine_grid(int C_exp,int gama_exp, list<param_pair>& res)
 		{
-			if(src.empty())
-			{
-				cout<<"Error in converting: source mat is emtpy."<<endl;
-				return;
-			}
-			list<Mat>::const_iterator it=src.begin();
-			int num=src.size();
-			int n_dim=src.front().cols;
-
-			dst=Mat(num,n_dim,CV_32FC1);
-
-			int k=0;
-			for(;it!=src.end();it++,k++)
-				for(int i=0;i<n_dim;i++)
-					dst.at<float>(k,i)=it->at<_type>(k,i);
+			for(float i=C_exp-2;i<=C_exp+2;i+=0.25)
+				for(float j=gama_exp-2;j<=gama_exp+2;j+=0.25)
+					res.push_back(param_pair(std::pow(2,i),std::pow(2,j)));
 		}
 
 
+		static void combine_vectors(const list<int>& index_set,Mat& res)
+		{
+			res.release();
+			list<int>::const_iterator it;
+			for(it=index_set.begin();it!=index_set.end();it++)
+				res.push_back(training_data[*it]);
+		}
+		static void combine_labels(const list<int>& index_set,Mat& res)
+		{
+			res.release();
+			list<int>::const_iterator it;
+			for(it=index_set.begin();it!=index_set.end();it++)
+				res.push_back(labels[*it]);
+		}
+
+
+
+		
+		
 		static Ptr<cv::ml::SVM> classifier;
 		static bool is_trained;
 		static Mat support_vectors;
 	};
-
 	class holes_matching
 	{
 	public:

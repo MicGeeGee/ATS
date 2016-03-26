@@ -5,7 +5,7 @@
   <svmType>C_SVC</svmType>
   <kernel>
     <type>LINEAR</type></kernel>
-  <C>1.</C>
+  <C>16.</C>
   <term_criteria><epsilon>9.9999999999999995e-007</epsilon>
     <iterations>1000</iterations></term_criteria>
   <var_count>4</var_count>
@@ -19,11 +19,11 @@
   <sv_total>1</sv_total>
   <support_vectors>
     <_>
-      2.63142705e+000 2.77165979e-001 5.69076002e-001 5.04545033e-001</_></support_vectors>
+      1.80293560e+000 -2.03209281e-001 7.25336909e-001 5.73667943e-001</_></support_vectors>
   <decision_functions>
     <_>
       <sv_count>1</sv_count>
-      <rho>1.5122039057314396e+000</rho>
+      <rho>1.1590512151042787e+000</rho>
       <alpha>
         1.</alpha></_></decision_functions></opencv_ml_svm>
 </opencv_storage>

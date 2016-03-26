@@ -3,10 +3,9 @@
 namespace ats
 {
 	
-	list<Mat> ats_svm::training_data=list<Mat>();
-	list<int> ats_svm::labels=list<int>();
-	list<Mat> ats_svm::test_data=list<Mat>();
-
+	vector<Mat> ats_svm::training_data=vector<Mat>();
+	vector<Mat> ats_svm::labels=vector<Mat>();
+	vector<Mat> ats_svm::test_data=vector<Mat>();
 
 	int ats_frame::index_generator;
 
@@ -301,7 +300,7 @@ namespace ats
 					//continue;
 				//if(h.get_m_ft(3)>0.2)
 					//continue;
-				if(ats::ats_svm::predict<float>(h.get_m_ft())==-1)
+				if(ats::ats_svm::predict(h.get_m_ft())==-1)
 					continue;
 				
 				
@@ -411,7 +410,7 @@ namespace ats
 		fp=fopen(tar_path.c_str(),"w");
 		list<hole>::iterator it;
 		for(it=hole_set.begin();it!=hole_set.end();it++)
-			fprintf(fp,"%d:%f %f %f %f label\n",it->get_index(),it->get_m_ft(1),it->get_m_ft(2),it->get_m_ft(3),it->get_m_ft(4));
+			fprintf(fp,"%d : %f %f %f %f label\n",it->get_index(),it->get_m_ft(1),it->get_m_ft(2),it->get_m_ft(3),it->get_m_ft(4));
 
 		fclose(fp);
 
