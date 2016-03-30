@@ -66,7 +66,7 @@ namespace ats
 
 		int get_dis(const hole& h1,const hole& h2)const;
 
-		int get_max_dis()const;
+		int get_mid_dis()const;
 		static int generate_index()
 		{
 			return index_generator++;
@@ -93,7 +93,7 @@ namespace ats
 		bool is_labeled;
 
 		//int mid_dis;
-		int max_dis;
+		int mid_dis;
 
 		int overlapping_num;
 
@@ -120,7 +120,7 @@ namespace ats
 
 		list<hole>::iterator merge_holes(list<hole>::iterator& p_host,list<hole>::iterator& p_guest);
 
-		void calc_max_dis();
+		void calc_mid_dis();
 
 		float frag_assessment(hole& h1,hole& h2);
 
@@ -184,7 +184,7 @@ namespace ats
 			{
 				
 
-				int max_dis=frame.get_max_dis();
+				int mid_dis=frame.get_mid_dis();
 
 				list<hole> hole_set=frame.get_hole_set();
 				list<hole>::iterator it;
@@ -198,7 +198,10 @@ namespace ats
 						float theta=calc_theta(h.get_gp(),it->get_gp());
 						int bin_rho;
 						int bin_theta;
-						bin_rho=calc_bin_rho(rho,max_dis);
+						bin_rho=calc_bin_rho(rho,mid_dis);
+						
+						if(!(bin_rho<5))//if the other point is much far from this point, drop it.
+							continue;
 						bin_theta=calc_bin_theta(theta);
 						int k=bin_rho*12+bin_theta;
 
@@ -223,10 +226,10 @@ namespace ats
 			static int calc_bin(ats_frame& frame,const hole& cen_h,const hole& h)
 			{
 				int rho=frame.get_dis(cen_h,h);
-				int max_dis=frame.get_max_dis();
+				int mid_dis=frame.get_mid_dis();
 				float theta=calc_theta(cen_h.get_gp(),h.get_gp());
 				
-				int k=calc_bin_rho(rho,max_dis)*12+calc_bin_theta(theta);
+				int k=calc_bin_rho(rho,mid_dis)*12+calc_bin_theta(theta);
 				return k;
 			}
 
@@ -246,10 +249,10 @@ namespace ats
 					
 				}
 			}
-			static int calc_bin_rho(float rho,int max_dis)
+			static int calc_bin_rho(float rho,int mid_dis)
 			{
-				if(16*rho/max_dis>1)
-					return rho?log(16*rho/max_dis)/log(2):0;
+				if(16*rho/mid_dis>1)
+					return rho?log(16*rho/mid_dis)/log(2):0;
 				else
 					return 0;
 			}
@@ -428,10 +431,11 @@ namespace ats
 				break;
 			case ats::hole::detected:
 				{
-					if(area<=(precur->area*0.7))
+					if(area<=(precur->area*0.9))
 					{
 						state=hole::collapse;
 						area_cache=precur->area;
+						return false;
 					}
 
 					float factor=std::pow(2.7,(-1)*precur->area/83.0)+1;
@@ -1156,7 +1160,7 @@ namespace ats
 				list<hole>::iterator c_it=current_frame->get_hole(revindex_map_c[assign_arr[i]]);
 				list<hole>::iterator l_it=last_frame->get_hole(revindex_map_l[i]);
 				float matching_cost=cost_m.at<float>(i,assign_arr[i]);
-				bool is_overlapping=c_it->update_state(&(*l_it),matching_cost,2.5);
+				bool is_overlapping=c_it->update_state(&(*l_it),matching_cost,10.0);
 				
 		//		bool is_overlapping=(current_frame->get_hole(revindex_map_c[assign_arr[i]]))->update_state(&(*(last_frame->get_hole(revindex_map_l[i]))),
 			//		cost_m.at<float>(i,assign_arr[i]),1.0);

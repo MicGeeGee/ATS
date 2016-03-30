@@ -50,7 +50,7 @@ namespace ats
 
 		overlapping_list=frame.overlapping_list;
 		is_labeled=frame.is_labeled;
-		max_dis=frame.max_dis;
+		mid_dis=frame.mid_dis;
 		dis_mat=frame.dis_mat;
 		index_map=frame.index_map;
 		ptr_map=frame.ptr_map;
@@ -359,7 +359,7 @@ namespace ats
 		}
 		
 		this->is_holes_detected=true;
-		this->calc_max_dis();
+		this->calc_mid_dis();
 
 
 		/*
@@ -532,7 +532,7 @@ namespace ats
 				continue;
 			  
 			theta_diff+=std::abs(hole::shape_ft::calc_theta(h1.get_gp(),it->get_gp())-hole::shape_ft::calc_theta(h2.get_gp(),it->get_gp()))/3.14;
-			rho_diff+=std::abs(calc_dis(h1.get_gp(),it->get_gp())-calc_dis(h2.get_gp(),it->get_gp()))/(this->get_max_dis()+0.0);
+			rho_diff+=std::abs(calc_dis(h1.get_gp(),it->get_gp())-calc_dis(h2.get_gp(),it->get_gp()))/(this->get_mid_dis()+0.0);
 			
 		}
 
@@ -546,19 +546,22 @@ namespace ats
 
 		return dis_mat.at<int>(index_map.find(index1)->second,index_map.find(index2)->second);
 	}
-	int ats_frame::get_max_dis()const
+	int ats_frame::get_mid_dis()const
 	{
-		return max_dis;
+		return mid_dis;
 	}
-	void ats_frame::calc_max_dis()
+	void ats_frame::calc_mid_dis()
 	{
 		int dis_mat_i=0;
 		dis_mat=Mat::zeros(hole_set.size(),hole_set.size(),CV_32S);
 
-		max_dis=0;
-		//vector<int> dis_arr;
+		mid_dis=0;
+		vector<int> dis_arr;
+		
 		list<hole>::iterator it1;
 		list<hole>::iterator it2;
+
+
 		for(it1=hole_set.begin();it1!=hole_set.end();it1++)
 		{
 			ptr_map[it1->get_index()]=it1;
@@ -570,18 +573,17 @@ namespace ats
 					index_map[it2->get_index()]=dis_mat_i++;
 					
 				int dis=calc_dis(it1->get_gp(),it2->get_gp());
-				if(dis>max_dis)
-					max_dis=dis;
+				dis_arr.push_back(dis);
 
-			//	dis_arr.push_back(calc_dis(it1->get_gp(),it2->get_gp()));
-				//dis_mat.at<int>(index_map[it1->get_index()],index_map[it2->get_index()])=dis_arr.front();
+
+			
 				dis_mat.at<int>(index_map[it1->get_index()],index_map[it2->get_index()])=dis;
 					
 			}
 		}
-		//std::sort(dis_arr.begin(),dis_arr.end());
+		std::sort(dis_arr.begin(),dis_arr.end());
 
-		//mid_dis=dis_arr[dis_arr.size()/2];	
+		mid_dis=dis_arr[dis_arr.size()/2];	
 	}
 
 	int ats_frame::calc_dis(const Point& a,const Point& b)
