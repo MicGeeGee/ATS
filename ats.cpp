@@ -270,7 +270,8 @@ namespace ats
 		GaussianBlur(*this,*this,Size(3,3),0,0);
 		//this->morphology_filter(*this,*this,0,2,3);
 		
-		for(int i=thre_min;i<=((mid_brgtnss+60)>255?255:(mid_brgtnss+30));i+=30)
+		//for(int i=thre_min;i<=((mid_brgtnss+60)>255?255:(mid_brgtnss+30));i+=30)
+		for(int i=thre_min;i<=100;i+=30)
 		{
 			Mat thre_img;
 			vector<vector<Point> > contour_container;
@@ -883,8 +884,7 @@ namespace ats
 
 	Mat holes_matching::cost_m;
 
-	map<int,int> holes_matching::result_row;
-	map<int,int> holes_matching::result_col;
+	
 
 	map<int,int> holes_matching::revindex_map_c;
 	map<int,int> holes_matching::revindex_map_l;
@@ -892,6 +892,8 @@ namespace ats
 	int holes_matching::row_res[100000];
 	int holes_matching::col_res[100000];
 	float holes_matching::total_cost;
+
+	vector<int> holes_matching::assign_arr;
 
 	string holes_matching::file_path;
 	int holes_matching::overlapping_num=0;

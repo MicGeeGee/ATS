@@ -47,7 +47,7 @@ namespace ats
 		void save_g(const string& tar_path);
 		void save_hole_set(const string& tar_path);
 
-		void detect_holes(int thre_min=10);
+		void detect_holes(int thre_min=20);
 
 		int get_grad(int x,int y)const;
 		int get_grad(const Point& pos)const;
@@ -415,7 +415,7 @@ namespace ats
 			//that there is a stable match
 			if(!precur)
 				return false;
-			if(matching_cost>1)
+			if(matching_cost>thre)
 				return false;
 
 			//first inherit the state:
@@ -1003,16 +1003,26 @@ namespace ats
 		
 		static void run()
 		{
+
+			FILE* fp=fopen(file_path.c_str(),"a");
+			printf("#%d & #%d:\n",last_frame->get_index(),current_frame->get_index());
+			fprintf(fp,"#%d & #%d:\n",last_frame->get_index(),current_frame->get_index());
+			fclose(fp);
+
+
+			revindex_map_c.clear();
+			revindex_map_l.clear();
+			
+			
+			
 			bool is_successful=calc_matching_cost();
+			
+
+			
 			current_frame->set_overlapping_num(overlapping_num);
 
 			
-			if(!is_successful)
-				return;
-
 			
-
-			cout<<cost_m<<endl;
 
 			print_result(file_path);
 			
@@ -1027,13 +1037,12 @@ namespace ats
 
 		static string file_path;
 
-		static map<int,int> result_row;
-		static map<int,int> result_col;
-
 		static float total_cost;
 
 		static int row_res[100000];
 		static int col_res[100000];
+
+		static vector<int> assign_arr;
 
 		static map<int,int> revindex_map_c;//cost_m index to hole index
 		static map<int,int> revindex_map_l;
@@ -1048,10 +1057,14 @@ namespace ats
 		{
 		    bool is_successfull=calc_cost_m();
 			
-			if(!is_successfull)
-				return false;
+			cout<<cost_m<<endl;
 
-			float res=hungarian<float>(cost_m,row_res,col_res);
+
+			//float res=hungarian<float>(cost_m,row_res,col_res);
+			
+			float res=munkres(cost_m,assign_arr);
+			
+
 			res/=cost_m.cols;
 
 			total_cost=res;
@@ -1071,7 +1084,7 @@ namespace ats
 			{
 				for(it=cur_hole_set.begin();it!=cur_hole_set.end();it++)
 				{	
-					if(frag_assessment(*current_frame,*(current_frame->get_hole(revindex_map_c[row_res[i]])),*it)<1)
+					if(frag_assessment(*current_frame,*(current_frame->get_hole(revindex_map_c[assign_arr[i]])),*it)<1)
 					{
 						
 					}
@@ -1081,10 +1094,12 @@ namespace ats
 
 
 			handle_matching_res(file_path);
-			//area_matching(file_path);
+			
 
-			//return total matching cost
-			return true;
+			if(!is_successfull)
+				return false;
+			else
+				return true;
 		}
 
 		
@@ -1092,11 +1107,10 @@ namespace ats
 		{
 			FILE* fp=fopen(file_path.c_str(),"a");
 
-			printf("#%d & #%d:\n",last_frame->get_index(),current_frame->get_index());
 			printf("total matching cost:%f\n",total_cost);
 			printf("matching pairs(last,current:last area, current area):\n");
 
-			fprintf(fp,"#%d & #%d:\n",last_frame->get_index(),current_frame->get_index());
+			
 			fprintf(fp,"total matching cost:%f\n",total_cost);
 			fprintf(fp,"matching pairs(last,current:last area, current area):\n");
 			for(int i=0;i<cost_m.rows;i++)
@@ -1104,21 +1118,23 @@ namespace ats
 	
 				if(revindex_map_l[i]==-1)
 					continue;
+				if(revindex_map_c[assign_arr[i]]==-1)
+					continue;
 				
 				int area_l=(last_frame->get_hole(revindex_map_l[i]))->get_area();
-				int area_c=(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area();
+				int area_c=(current_frame->get_hole(revindex_map_c[assign_arr[i]]))->get_area();
 				
 
-				printf("(%d,%d,%d,%d):(%d,%d)\n",revindex_map_l[i],(last_frame->get_hole(revindex_map_l[i]))->get_hole_state(),
-					revindex_map_c[row_res[i]],(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_hole_state(),area_l,area_c);
-				fprintf(fp,"(%d,%d,%d,%d):(%d,%d)\n",revindex_map_l[i],(last_frame->get_hole(revindex_map_l[i]))->get_hole_state(),
-					revindex_map_c[row_res[i]],(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_hole_state(),area_l,area_c);
+				printf("(%d,%d,%d,%d):(%d,%d),%f\n",revindex_map_l[i],(last_frame->get_hole(revindex_map_l[i]))->get_hole_state(),
+					revindex_map_c[assign_arr[i]],(current_frame->get_hole(revindex_map_c[assign_arr[i]]))->get_hole_state(),area_l,area_c,cost_m.at<float>(i,assign_arr[i]));
+				fprintf(fp,"(%d,%d,%d,%d):(%d,%d),%f\n",revindex_map_l[i],(last_frame->get_hole(revindex_map_l[i]))->get_hole_state(),
+					revindex_map_c[assign_arr[i]],(current_frame->get_hole(revindex_map_c[assign_arr[i]]))->get_hole_state(),area_l,area_c,cost_m.at<float>(i,assign_arr[i]));
 			}
 			fclose(fp);
 			
 
 			for(int i=0;i<cost_m.rows;i++)
-				fprintf(fp,"(%d,%d)\n",revindex_map_l[i],revindex_map_c[row_res[i]]);
+				fprintf(fp,"(%d,%d)\n",revindex_map_l[i],revindex_map_c[assign_arr[i]]);
 
 		}
 		
@@ -1131,18 +1147,19 @@ namespace ats
 			{
 				if(revindex_map_l[i]==-1)
 					continue;
-
-				if(revindex_map_l[i]==853&&revindex_map_c[row_res[i]]==904)
-				{
-					cout<<(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_m_ft(2)<<endl;
-					cout<<last_frame->get_hole(revindex_map_l[i])->get_m_ft(2)<<endl;
-
-					cout<<42815<<endl;
-				}
+				if(revindex_map_c[assign_arr[i]]==-1)
+					continue;
+				
 
 				//judge whether there are overlappings and make increment
-				bool is_overlapping=(current_frame->get_hole(revindex_map_c[row_res[i]]))->update_state(&(*(last_frame->get_hole(revindex_map_l[i]))),
-					cost_m.at<float>(i,row_res[i]),1);
+				
+				list<hole>::iterator c_it=current_frame->get_hole(revindex_map_c[assign_arr[i]]);
+				list<hole>::iterator l_it=last_frame->get_hole(revindex_map_l[i]);
+				float matching_cost=cost_m.at<float>(i,assign_arr[i]);
+				bool is_overlapping=c_it->update_state(&(*l_it),matching_cost,2.5);
+				
+		//		bool is_overlapping=(current_frame->get_hole(revindex_map_c[assign_arr[i]]))->update_state(&(*(last_frame->get_hole(revindex_map_l[i]))),
+			//		cost_m.at<float>(i,assign_arr[i]),1.0);
 
 
 				if(is_overlapping)
@@ -1150,10 +1167,10 @@ namespace ats
 					overlapping_num++;
 
 					cout<<"new overlapping location(pre_index,cur_index:pre_area->cur_area):"<<endl;
-					cout<<revindex_map_l[i]<<","<<revindex_map_c[row_res[i]]<<":"
-					<<last_frame->get_hole(revindex_map_l[i])->get_area()<<"->"<<(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area()<<endl;
+					cout<<revindex_map_l[i]<<","<<revindex_map_c[assign_arr[i]]<<":"
+					<<last_frame->get_hole(revindex_map_l[i])->get_area()<<"->"<<(current_frame->get_hole(revindex_map_c[assign_arr[i]]))->get_area()<<endl;
 					
-					fprintf(fp,"new overlapping location(pre_index,cur_index:pre_area->cur_area):\n%d,%d:%d->%d\n",revindex_map_l[i],revindex_map_c[row_res[i]],last_frame->get_hole(revindex_map_l[i])->get_area(),(current_frame->get_hole(revindex_map_c[row_res[i]]))->get_area());
+					fprintf(fp,"new overlapping location(pre_index,cur_index:pre_area->cur_area):\n%d,%d:%d->%d\n",revindex_map_l[i],revindex_map_c[assign_arr[i]],last_frame->get_hole(revindex_map_l[i])->get_area(),(current_frame->get_hole(revindex_map_c[assign_arr[i]]))->get_area());
 				}
 
 
@@ -1189,7 +1206,8 @@ namespace ats
 
 			int num_l=h_set_l.size();
 			int num_c=h_set_c.size();
-			if(num_l<=num_c)
+
+			if(num_l<=num_c)//if the hole num has increased or just held there
 			{
 				int num=num_c;
 				float inf=0;
@@ -1232,9 +1250,45 @@ namespace ats
 				return true;
 
 			}
-			else
+			else//if the hold num has decreased
 			{
 				cout<<"Warning:number of holes have decreased."<<endl;
+
+				int num=num_l;
+				float inf=0;
+				cost_m=Mat::zeros(num,num,CV_32F);
+				
+				int m=0;
+				int n=0;
+
+				list<hole>::iterator it_l;
+				list<hole>::iterator it_c;
+				for(it_l=h_set_l.begin(),m=0;it_l!=h_set_l.end();it_l++,m++)
+					for(it_c=h_set_c.begin(),n=0;it_c!=h_set_c.end();it_c++,n++)
+					{
+						revindex_map_l[m]=it_l->get_index();
+						revindex_map_c[n]=it_c->get_index();
+
+						float cost=chi_sq_test(*it_l,*it_c);
+						cost_m.at<float>(m,n)=cost;
+						//cost_m.at<float>(n,m)=cost;
+						if(cost>inf)
+							inf=cost;
+					}
+
+				//upper part of the reminder:
+				for(int i=0;i<n;i++)
+					for(int j=n;j<m;j++)
+					{
+						revindex_map_c[j]=-1;
+						cost_m.at<float>(i,j)=inf;
+					}
+
+
+				//lower part of the reminder:
+				for(int i=n;i<m;i++)
+					for(int j=n;j<m;j++)
+						cost_m.at<float>(i,j)=inf;
 				return false;
 			}
 
@@ -1534,7 +1588,412 @@ namespace ats
 	}
 		
 
-	};
+		// B = A( extractRows, extractCols )
+		// Require: 
+		//	extractRows.size()==A.rows, extractCols.size()==A.cols
+		//	sum(extractRows)==B.rows, sum(extractCols)==B.cols
+		static void  extractGrids(const Mat &A, const vector<bool> &extractRows, const vector<bool> &extractCols, Mat &B )
+		{
+			typedef float ValueType;
+			ValueType *pt1 = (ValueType*)A.data, *pt2 = (ValueType*)B.data, *pt3, *pt4;
+			const int step1 = A.step1(), rows = A.rows, cols = A.cols, step2 = B.step1();
+			vector<bool>::const_iterator it1, it2, it3 = extractRows.end(), it4 = extractCols.end();
+			for( it1=extractRows.begin(); it1!=it3; pt1+=step1 ){
+				pt3 = pt1;
+				if( *(it1++) ){
+					pt4 = pt2;
+					for( it2=extractCols.begin(); it2!=it4; pt3++ )
+						if( *(it2++) )
+							*(pt4++) = *pt3;
+					pt2 += step2;
+				}
+			}
+		}
 
+		// B = A( extract )
+		// Require: 
+		//		min(A.rows,A.cols) ==1
+		//		if(A.rows)==1, then require: A.cols==extract.size(), B.rows==1, sum(extract)==B.cols
+		//		if(A.cols)==1, then require: A.rows==extract.size(), B.cols==1, sum(extract)==B.rows
+		static void  extractDots(const Mat &A, const vector<bool> &extract, Mat &B )
+		{
+			assert( A.rows==1 || A.cols==1 );
+			typedef float ValueType;
+			ValueType *pt1 = (ValueType*)A.data, *pt2 = (ValueType*)B.data;
+			vector<bool>::const_iterator it = extract.begin(), it2 = extract.end();
+			if( A.rows==1 ){
+				for( ; it!=it2; pt1++ )
+					if( *(it++) )
+						*(pt2++) = *pt1;
+			}
+			else{
+				int step1 = A.step1(), step2 = B.step1();
+				for( ; it!=it2; pt1+=step1 )
+					if( *(it++) ){
+						*pt2 = *pt1;
+						pt2+=step2;
+					}
+			}
+		}
+		/* Initial Matlab code comes from: 
+			http://www.mathworks.com/matlabcentral/fileexchange/20652-hungarian-algorithm-for-linear-assignment-problems--v2-3-
+	
+			Hungarian algorithm for matrix assignment problem.
+			costMat: there are (rows) works and (cols) jobs. costMat(i,j) means the cost of assigning job (j) to worker (i).
+			The problem is to solve a holistic optimization problem of assigning each worker a job!
+			The algorithm allows partial assignment - if there is no proper job for worker (i) we would set assignment(i) to -1, meaning no assignment for worker (i).
+
+			Negatives in costMat means the corresponding assignments are forbidden.
+		*/
+		static float  munkres(Mat &costMat, vector<int> &assignment )
+		{
+			assert( costMat.type()==CV_32FC1 );
+			const int rows = costMat.rows, cols = costMat.cols;
+			assignment.assign( rows, -1 );
+
+			Mat validMat( rows, cols, CV_8UC1 );
+			compare( costMat, Scalar(0), validMat, CV_CMP_GE );
+
+			float *ptF, *ptF2;
+			uchar *ptU, *ptU2;
+			int stepGap;
+			int r, c, i;
+			unsigned j;
+			vector<bool>::iterator it1, it2;
+			vector<int>::iterator it3, it4;
+
+			// validCol & validRow	
+			vector<bool> validRow( rows, false );
+			ptU = validMat.data;
+			for( r=0; r<rows; r++ ){
+				ptU2 = ptU;
+				for( c=0; c<cols; c++ ) if( *(ptU2++) ) break;
+				if( c<cols ) validRow[r] = true;
+				ptU += validMat.step;
+			}
+			vector<bool> validCol( cols, false );
+			ptU = validMat.data;	
+			for( c=0; c<cols; c++ ){
+				ptU2 = ptU;
+				for( r=0; r<rows; r++ ) if(*ptU2) break; else ptU2+= validMat.step;
+				if( r<rows ) validCol[c] = true;
+				ptU++;
+			}
+
+			// nRows & nCols
+			int nRows = 0, nCols = 0;
+			it1=validRow.begin(), it2=validCol.begin();
+			r = 0; while(r++<rows) if( *(it1++) ) nRows++;
+			c = 0; while(c++<cols) if( *(it2++) ) nCols++;
+			const int n = nRows>nCols ? nRows : nCols;
+			if( !n )
+				return -1;
+
+			// sumValid & maxValid
+			float sumValid = 0, maxValid = -1.f;
+			ptF = (float*)costMat.data;
+			ptU = validMat.data;
+			stepGap = validMat.step - validMat.cols;	
+			r = 0; while(r++<rows){
+				c = 0; while(c++<cols){			
+					if( *(ptU++) ){
+						float v = *(ptF++);	sumValid += v;
+						if( v>maxValid ) maxValid = v;
+					}
+					else ptF++;
+				} ptU += stepGap;
+			}
+
+			// bigM & maxValid	
+			maxValid *= 10.f;
+			float bigM = log10f( sumValid );
+			int power = (int)ceilf( bigM ) + 1;	
+			bigM = 1.f; //bigM = pow( 10, power );
+			for( i=0; i<power; i++ )
+				bigM *= 10;
+
+			// costMat(~validMat) = bigM;
+			validMat = ~validMat; // validMat 其实已经是 invalidMat!
+			costMat.setTo( bigM, validMat );
+
+			// dMat
+			Mat dMat( n, n, CV_32FC1, Scalar(maxValid) );
+
+			// dMat(1:nRows,1:nCols) = costMat(validRow,validCol);
+			extractGrids( costMat, validRow, validCol, dMat(cv::Rect(0,0,nCols,nRows)) );
+
+			//*************************************************
+			// Munkres' Assignment Algorithm starts here
+			//*************************************************
+	
+			// some storage for temporary usage
+			Mat tmp1( n, n, CV_32FC1 ); // size and type accords with dMat
+			Mat tmp2( n, n, CV_32FC1 );
+			Mat tmp3( n, n, CV_32FC1 );
+			Mat tmp4( n, n, CV_8UC1 );
+			Mat tmp5( n, 1, CV_32FC1 );
+			Mat tmp6( 1, n, CV_32FC1 );
+
+			// STEP 1: Subtract the row minimum from each row.
+			// minR & minC
+			Mat minR, minC;
+			reduce( dMat, minR, 1, CV_REDUCE_MIN );
+			repeat( minR, 1, n, tmp1 );
+			tmp2 = dMat - tmp1;
+			reduce( tmp2, minC, 0, CV_REDUCE_MIN );
+			repeat( minC, n, 1, tmp2 );
+
+			// STEP 2: Find a zero of dMat. If there are no starred zeros in its column or row start the zero. Repeat for each zero
+			// zP
+			Mat zP( n, n, CV_8UC1 );	
+			tmp3 = tmp1 + tmp2;
+			compare( dMat, tmp3, zP, CV_CMP_EQ );
+	
+			// starZ
+			vector<int> starZ(n,-1);
+			ptU = zP.data;
+			for( r=0; r<n; r++ ){
+				ptU2 = ptU;
+				for( c=0; c<n; c++ ){
+					if( *(ptU2++) ){
+						starZ[r] = c;
+						memset( ptU, 0, r ); // zP(r,:)=false;
+						zP.col( c ) = Scalar(0); // zP(:,c)=false;
+						break;
+					}
+				}
+				ptU += zP.step;
+			}
+	
+			int uZc, uZr;
+
+			while(1){ // STEP 3
+				// Cover each column with a starred zero. If all the columns are covered then the matching is maximum
+				it3 = starZ.begin();
+				for( ; it3!=starZ.end(); it3++ ) if( *it3<0 ) break;
+				if( it3==starZ.end() ) break;
+
+				// validColumn & validRow & primeZ
+				vector<bool> noncoverColumn( n, true );
+				for( it3=starZ.begin(); it3!=starZ.end(); it3++ ){ 
+					if( *it3<0 ) continue;
+					noncoverColumn[*it3] = false;
+				}
+				vector<bool> noncoverRow( n, true );
+				vector<int> primeZ(n,-1);
+
+				// minC_uncovered & minR_uncovered
+				int cnt1 = 0, cnt2 = 0;
+				it1 = noncoverColumn.begin(), it2 = noncoverRow.begin();
+				i = 0; while(i++<n){ 
+					if( *(it1++) ) cnt1++; // number of non-covered columns
+					if( *(it2++) ) cnt2++; // number of non-covered  rows	
+				}
+				Mat minR_uncovered = tmp5.rowRange( 0, cnt2 );
+				Mat minC_uncovered = tmp6.colRange( 0, cnt1 );
+				extractDots( minR, noncoverRow, minR_uncovered );
+				extractDots( minC, noncoverColumn, minC_uncovered );
+
+				// rIdx & cIdx
+				Mat temp1 = tmp1( cv::Rect(0,0,cnt1,cnt2) );
+				Mat temp2 = tmp2( cv::Rect(0,0,cnt1,cnt2) );
+				Mat temp3 = tmp3( cv::Rect(0,0,cnt1,cnt2) );
+				Mat temp4 = tmp4( cv::Rect(0,0,cnt1,cnt2) );
+				repeat( minR_uncovered, 1, cnt1, temp1 );
+				repeat( minC_uncovered, cnt2, 1, temp2 );
+				temp2 = temp1 + temp2;
+				extractGrids( dMat, noncoverRow, noncoverColumn, temp3 );
+				compare( temp2, temp3, temp4, CV_CMP_EQ );
+				vector<int> rIdx, cIdx; // [rIdx,cIdx] = find(temp4);
+				ptU = temp4.data;
+				stepGap = temp4.step - temp4.cols;
+				for( r=0; r<temp4.rows; r++ ){
+					for( c=0; c<temp4.cols; c++ ){
+						if( *(ptU++) ){
+							rIdx.push_back( r );
+							cIdx.push_back( c );
+						}
+					}
+					ptU += stepGap;
+				}
+
+				while(1){ // STEP 4
+					// Find a non-covered zero and prime it.  If there is no starred zero in the row containing this primed zero, Go to Step 5. 
+					// Otherwise, cover this row and uncover the column containing the starred zero. Continue in this manner until there are no 
+					// uncovered zeros left. Save the smallest uncovered value and Go to Step 6.
+
+					// cR & cC
+					vector<int> cR, cC;
+					for( j=0; j<noncoverRow.size(); j++ )
+						if( noncoverRow[j] )
+							cR.push_back( j );
+					for( j=0; j<noncoverColumn.size(); j++ )
+						if( noncoverColumn[j] )
+							cC.push_back( j );
+
+					// rIdx = cR(rIdx), cIdx = cC(cIdx);
+					for( j=0; j<rIdx.size(); j++ ){
+						rIdx[j] = cR[ rIdx[j] ];
+						cIdx[j] = cC[ cIdx[j] ];
+					}
+
+					int Step = 6;
+					while( !cIdx.empty() ){
+						uZr = rIdx[0];
+						uZc = cIdx[0];
+						primeZ[uZr] = uZc;
+						int stz = starZ[uZr];
+						if( stz<0 ){
+							Step = 5;
+							break;
+						}
+						noncoverRow[uZr] = false;
+						noncoverColumn[stz] = true;
+						// rIdx(rIdx==uZr) = []
+						vector<int> rIdx2, cIdx2;
+						for( it3=rIdx.begin(), it4=cIdx.begin(); it3!=rIdx.end(); it3++, it4++ )
+							if( *it3!=uZr ){
+								rIdx2.push_back( *it3 );
+								cIdx2.push_back( *it4 );
+							}
+						rIdx = rIdx2, cIdx = cIdx2;
+						// cR = find(~coverRow);
+						cR.clear();
+						for( j=0; j<noncoverRow.size(); j++ )
+							if( noncoverRow[j] )
+								cR.push_back( j );
+						// z = dMat(~coverRow,stz) == minR(~coverRow) + minC(stz);
+						int sz = cR.size();
+						minR_uncovered = tmp5.rowRange( 0, sz );
+						extractDots( minR, noncoverRow, minR_uncovered );
+						minR_uncovered = minR_uncovered + Scalar( minC.at<float>(stz) );
+						temp1 = tmp1( cv::Rect(0,0,1,sz) );
+						extractDots( dMat.col(stz), noncoverRow, temp1 );
+						temp4 = tmp4( cv::Rect(0,0,1,sz) );
+						compare( temp1, minR_uncovered, temp4, CV_CMP_EQ );
+						// rIdx = [rIdx(:);cR(z)];
+						for( i=0, ptU=temp4.data; i<temp4.rows; i++, ptU+=temp4.step )
+							if( *ptU ){
+								rIdx.push_back( cR[i] );
+								cIdx.push_back( stz );
+							}
+					}
+
+					if( Step==6 ){
+						// STEP 6: Add the minimum uncovered value to every element of each covered
+						//			row, and subtract it from every element of each uncovered column.
+						//			Return to Step 4 without altering any stars, primes, or covered lines.
+						cnt1 = 0, cnt2 = 0;
+						it1 = noncoverColumn.begin(), it2 = noncoverRow.begin();
+						i = 0; while(i++<n){ 
+							if( *(it1++) ) cnt1++; // number of non-covered columns
+							if( *(it2++) ) cnt2++; // number of non-covered  rows	
+						}
+						temp1 = tmp1( cv::Rect(0,0,cnt1,cnt2) );
+						minR_uncovered = tmp5.rowRange( 0, cnt2 );
+						minC_uncovered = tmp6.colRange( 0, cnt1 );
+						extractGrids( dMat, noncoverRow, noncoverColumn, temp1 );
+						extractDots( minR, noncoverRow, minR_uncovered );
+						extractDots( minC, noncoverColumn, minC_uncovered );
+
+						// minVal & rIdx & cIdx
+						temp2 = tmp2( cv::Rect(0,0,cnt1,cnt2) );
+						temp3 = tmp3( cv::Rect(0,0,cnt1,cnt2) );
+						repeat( minR_uncovered, 1, cnt1, temp2 );
+						repeat( minC_uncovered, cnt2, 1, temp3 );
+						temp3 = temp1 - temp2 - temp3;
+						double minVal;
+						Point minLoc;				
+						minMaxLoc( temp3, &minVal, 0, &minLoc );
+						rIdx.resize(1), cIdx.resize(1);
+						rIdx[0] = minLoc.y, cIdx[0] = minLoc.x;
+
+						// minC(~coverColumn) = minC(~coverColumn) + minval;
+						ptF = (float*)minC.data, ptF2 = (float*)minR.data;
+						it1 = noncoverColumn.begin(), it2 = noncoverRow.begin();
+						float minval = (float)minVal;
+						i = 0; while(i++<n) if( *(it1++) ) *(ptF++) += minval; else ptF++;
+						// minR(coverRow) = minR(coverRow) - minval;
+						i = 0; while(i++<n) if( *(it2++) ) ptF2++; else *(ptF2++) -= minval;
+					}
+					else
+						break;
+				}
+
+				// STEP 5
+				// Construct a series of alternating primed and starred zeros as follows:
+				//	Let Z0 represent the uncovered primed zero found in Step 4.
+				//	Let Z1 denote the starred zero in the column of Z0 (if any).
+				//	Let Z2 denote the primed zero in the row of Z1 (there will always
+				//	be one).  Continue until the series terminates at a primed zero
+				//	that has no starred zero in its column.  Unstar each starred
+				//  zero of the series, star each primed zero of the series, erase
+				//  all primes and uncover every line in the matrix.  Return to Step 3.
+				int rowZ1;
+				for( j=0; j<starZ.size(); j++ )
+					if( starZ[j]==uZc )
+						break;
+				if( j<starZ.size() )
+					rowZ1 = j;
+				else
+					rowZ1 = -1;
+				starZ[uZr] = uZc;
+				while( rowZ1>=0 ){
+					starZ[rowZ1] = -1;
+					uZc = primeZ[rowZ1];
+					uZr = rowZ1;
+					for( j=0; j<starZ.size(); j++ )
+						if( starZ[j]==uZc )
+							break;
+					if( j<starZ.size() )
+						rowZ1 = j;
+					else
+						rowZ1 = -1;
+					starZ[uZr] = uZc;
+				}
+			}
+
+			// assignment
+			// rowIdx = find(validRow); colIdx = find(validCol);
+			vector<int> rowIdx( nRows ), colIdx( nCols );
+			it1=validRow.begin(), it2=validCol.begin();
+			for( i=0, it3=rowIdx.begin(); i<rows; i++ ) if( *(it1++) ) *(it3++) = i;
+			for( i=0, it3=colIdx.begin(); i<cols; i++ ) if( *(it2++) ) *(it3++) = i;
+			// vIdx = starZ(1:nRows) <= nCols;
+			vector<bool> vIdx( nRows, false );
+			it1=vIdx.begin(), it3=starZ.begin();
+			i = 0; while(i++<nRows) if( *(it3++)<nCols ) *(it1++) = true; else it1++;
+			// assignment(rowIdx(vIdx)) = colIdx(starZ(vIdx));
+			for( j=0, it1=vIdx.begin(); j<vIdx.size(); j++ ){
+				if( *(it1++) ){
+					r = rowIdx[j], c = starZ[j];
+					assignment[r] = colIdx[c];
+				}
+			}
+			for( j=0; j<assignment.size(); j++ ){
+				int job = assignment[j];
+				if( job>-1 ){
+					uchar isInvalid = validMat.at<uchar>( j, job ); // validMat is now "invalidMat"
+					if( isInvalid )
+						assignment[j] = -1;
+				}
+			}
+			float cost=0;
+			for(int i=0;i<assignment.size();i++)
+			{
+				if(cost>0)
+					cost+=costMat.at<float>(i,assignment[i]);
+			}
+			return cost;
+				 
+
+		}
+		
+	
+		
+		
+
+		
+	};
 	
 }
