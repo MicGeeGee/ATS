@@ -49,7 +49,7 @@ namespace ats
 		void save_g(const string& tar_path);
 		void save_hole_set(const string& tar_path);
 
-		void detect_holes(int thre_min=30);
+		void detect_holes(int thre_min,int delta);
 
 		int get_grad(int x,int y)const;
 		int get_grad(const Point& pos)const;

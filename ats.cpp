@@ -270,7 +270,7 @@ namespace ats
 	
 
 
-	void ats_frame::detect_holes(int thre_min)
+	void ats_frame::detect_holes(int thre_min,int delta)
 	{
 
 		hole::index_generator_clear();//for different frames
@@ -279,7 +279,7 @@ namespace ats
 		//this->morphology_filter(*this,*this,0,2,3);
 		
 		//for(int i=thre_min;i<=((mid_brgtnss+60)>255?255:(mid_brgtnss+30));i+=30)
-		for(int i=thre_min;i<=100;i+=30)
+		for(int i=thre_min;i<=150;i+=delta)
 		{
 			Mat thre_img;
 			vector<vector<Point> > contour_container;
@@ -864,8 +864,9 @@ namespace ats
 	{
 		if(h.area>this->area)
 		{
-			if(h.assess_m_ft()<=this->assess_m_ft())
-				this->copy_from(h);
+			//if(h.assess_m_ft()<=this->assess_m_ft())
+			this->copy_from(h);
+			
 			return;
 		}
 		/*

@@ -44,9 +44,9 @@ namespace ats
 			
 
 			if(pframe_l->get_index()==0)
-				pframe_l->detect_holes();
+				pframe_l->detect_holes(50,30);
 
-			pframe_c->detect_holes();
+			pframe_c->detect_holes(50,30);
 
 			if(pframe_c->get_hole_num()<pframe_l->get_hole_num())
 			{
@@ -118,9 +118,9 @@ namespace ats
 
 
 			if(pframe_l->get_index()==0)
-				pframe_l->detect_holes();
+				pframe_l->detect_holes(30,10);
 
-			pframe_c->detect_holes(30);
+			pframe_c->detect_holes(30,10);
 
 			holes_matching::load_last_frame(pframe_l);
 			holes_matching::load_current_frame(pframe_c);
@@ -157,7 +157,7 @@ namespace ats
 		ats::ats_svm::load_LINEAR("svm_linear_classifier.xml");
 		
 		ats::ats_frame frame(file_path);
-		frame.detect_holes();
+		frame.detect_holes(50,30);
 		frame.show();
 		
 		
@@ -174,7 +174,7 @@ namespace ats
 		ats_svm::load_RBF("svm_rbf_classifier.xml");
 		
 		ats::ats_frame frame(file_path);
-		frame.detect_holes();
+		frame.detect_holes(30,10);
 		frame.show();
 		
 		
@@ -190,12 +190,12 @@ namespace ats
 
 int main()
 {
-	ats::sing_img_process_RBF(204);
+	//ats::sing_img_process_RBF(91);
 	
-	//ats::patch_process(1);
+	
 
 	
-	//ats::patch_process_RBF(1);
+	ats::patch_process_RBF(1);
 	//ats::patch_process_LINEAR(1);
 	
 
