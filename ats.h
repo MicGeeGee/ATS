@@ -32,6 +32,8 @@ namespace ats
 
 		ats_frame(const ats_frame& frame);
 
+		
+
 		ats_frame();
 
 		void load_img(const string& img_path)
@@ -47,7 +49,7 @@ namespace ats
 		void save_g(const string& tar_path);
 		void save_hole_set(const string& tar_path);
 
-		void detect_holes(int thre_min=20);
+		void detect_holes(int thre_min=30);
 
 		int get_grad(int x,int y)const;
 		int get_grad(const Point& pos)const;
@@ -62,7 +64,7 @@ namespace ats
 		int get_grad_y(const Point& p)const;
 
 		uchar mat_at(const Point& p)const;
-		list<hole>& get_hole_set();
+		map<int,hole>& get_hole_set();
 
 		int get_dis(const hole& h1,const hole& h2)const;
 
@@ -72,10 +74,10 @@ namespace ats
 			return index_generator++;
 		}
 
-		list<hole>::iterator get_hole(int index);
+		hole* get_hole(int index);
 		int get_hole_num()const;
 
-		void enroll_overlapping(int index);
+		
 
 		void set_overlapping_num(int n);
 		
@@ -97,16 +99,15 @@ namespace ats
 
 		int overlapping_num;
 
-		set<int> overlapping_list; //index list of overlapping holes
-
-		
 		Mat dis_mat;
 
 		int mid_brgtnss;
 
 		map<int,int> index_map;//index to i in dis_mat
 
-		map<int,list<hole>::iterator> ptr_map;//index to ptr
+		
+
+		map<int,hole> hole_set;
 
 		Mat origin_img;
 	
@@ -114,12 +115,19 @@ namespace ats
 		Mat grad_x;
 		Mat grad_y;
 
+		//std::list<hole> hole_set;
 		
+		
+		bool is_holes_detected;
+
+
+		
+
 
 		void reorganize_frags();
 
-		list<hole>::iterator merge_holes(list<hole>::iterator& p_host,list<hole>::iterator& p_guest);
-
+		void merge_holes(map<int,hole>::iterator& p_host,map<int,hole>::iterator& p_guest);
+		
 		void calc_mid_dis();
 
 		float frag_assessment(hole& h1,hole& h2);
@@ -127,9 +135,9 @@ namespace ats
 		int calc_dis(const Point& a,const Point& b);
 		int calc_dis_sq(const Point& a,const Point& b);
 
-		bool is_holes_detected;
+		
 
-		std::list<hole> hole_set;
+		
 
 		void resize_img(Mat& img,Mat& dst,double scale);
 	
@@ -186,16 +194,16 @@ namespace ats
 
 				int mid_dis=frame.get_mid_dis();
 
-				list<hole> hole_set=frame.get_hole_set();
-				list<hole>::iterator it;
+				map<int,hole> hole_set=frame.get_hole_set();
+				map<int,hole>::iterator it;
 				for(it=hole_set.begin();it!=hole_set.end();it++)
 				{
-					if(it->get_index()!=h.get_index())
+					if(it->second.get_index()!=h.get_index())
 					{
 						
-						int rho=frame.get_dis(*it,h);
+						int rho=frame.get_dis(it->second,h);
 						//float theta=(-1)*atan((it->get_gp().y-h.get_gp().y)/(it->get_gp().x-h.get_gp().x));//the axis are in different directions from normal one
-						float theta=calc_theta(h.get_gp(),it->get_gp());
+						float theta=calc_theta(h.get_gp(),it->second.get_gp());
 						int bin_rho;
 						int bin_theta;
 						bin_rho=calc_bin_rho(rho,mid_dis);
@@ -277,6 +285,7 @@ namespace ats
 		public:
 			manual_ft(const ats_frame&  frame);
 			manual_ft(const manual_ft& ft);
+			manual_ft();
 
 			Mat get_val(const ats_frame&  frame,hole& h)
 			{
@@ -333,6 +342,10 @@ namespace ats
 
 		hole(ats_frame& frame,const vector<Point>& contour);
 		hole(const hole& h);
+		hole();
+
+		//does not copy the index:
+		void copy_from(const hole& h);
 	
 		
 		float get_m_ft(int dim_i)
@@ -377,17 +390,7 @@ namespace ats
 			index_generator=0;
 		};
 
-		void enroll_overlapping()
-		{
-			overlapping_num++;
-		}
-		
-		int get_overlapping_num()const
-		{
-			return overlapping_num;
-		}
-		
-
+	
 		
 		int get_body_brghtnss_mid()
 		{
@@ -418,6 +421,8 @@ namespace ats
 			//that there is a stable match
 			if(!precur)
 				return false;
+			
+			
 			if(matching_cost>thre)
 				return false;
 
@@ -494,7 +499,7 @@ namespace ats
 		
 		
 	
-		int overlapping_num;
+		
 
 		void calc_body_info()
 		{
@@ -1062,16 +1067,22 @@ namespace ats
 			revindex_map_c.clear();
 			revindex_map_l.clear();
 			
+			//if(last_frame->get_hole_num()>current_frame->get_hole_num())
+				//current_frame=last_frame;
 			
+
 			
 			bool is_successful=calc_matching_cost();
 			
 
+			handle_matching_res(file_path);
+			
 			
 			current_frame->set_overlapping_num(overlapping_num);
 
 			
 			
+
 
 			print_result(file_path);
 			
@@ -1104,13 +1115,11 @@ namespace ats
 
 		static bool calc_matching_cost()
 		{
+			//if the hole num has decreased, is_successfull will be set to false;
 		    bool is_successfull=calc_cost_m();
 			
 			cout<<cost_m<<endl;
 
-
-			//float res=hungarian<float>(cost_m,row_res,col_res);
-			
 			float res=munkres(cost_m,assign_arr);
 			
 
@@ -1118,31 +1127,6 @@ namespace ats
 
 			total_cost=res;
 
-			
-
-			//if the matching method fails(i.e. the position pattern has changed a lot)
-			//then the overlapping detection will not be run.
-			//if(res>0.3)
-				//return -1;
-
-			/*
-			//for those holes matching dumppy holes
-			list<hole>::iterator it;
-			list<hole>& cur_hole_set=current_frame->get_hole_set();
-			for(int i=last_frame->get_hole_num();i<cost_m.cols;i++)
-			{
-				for(it=cur_hole_set.begin();it!=cur_hole_set.end();it++)
-				{	
-					if(frag_assessment(*current_frame,*(current_frame->get_hole(revindex_map_c[assign_arr[i]])),*it)<1)
-					{
-						
-					}
-				}
-			}
-			*/
-
-
-			handle_matching_res(file_path);
 			
 
 			if(!is_successfull)
@@ -1202,10 +1186,10 @@ namespace ats
 
 				//judge whether there are overlappings and make increment
 				
-				list<hole>::iterator c_it=current_frame->get_hole(revindex_map_c[assign_arr[i]]);
-				list<hole>::iterator l_it=last_frame->get_hole(revindex_map_l[i]);
+				hole* p_c=(current_frame->get_hole(revindex_map_c[assign_arr[i]]));
+				hole* p_l=last_frame->get_hole(revindex_map_l[i]);
 				float matching_cost=cost_m.at<float>(i,assign_arr[i]);
-				bool is_overlapping=c_it->update_state(&(*l_it),matching_cost,10.0);
+				bool is_overlapping=p_c->update_state(p_l,matching_cost,10.0);
 				
 		//		bool is_overlapping=(current_frame->get_hole(revindex_map_c[assign_arr[i]]))->update_state(&(*(last_frame->get_hole(revindex_map_l[i]))),
 			//		cost_m.at<float>(i,assign_arr[i]),1.0);
@@ -1250,8 +1234,8 @@ namespace ats
 		{
 
 
-			list<hole>& h_set_l=last_frame->get_hole_set();
-			list<hole>& h_set_c=current_frame->get_hole_set();
+			map<int,hole>& h_set_l=last_frame->get_hole_set();
+			map<int,hole>& h_set_c=current_frame->get_hole_set();
 
 			int num_l=h_set_l.size();
 			int num_c=h_set_c.size();
@@ -1265,15 +1249,16 @@ namespace ats
 				int m=0;
 				int n=0;
 
-				list<hole>::iterator it_l;
-				list<hole>::iterator it_c;
+				map<int,hole>::iterator it_l;
+				map<int,hole>::iterator it_c;
 				for(it_l=h_set_l.begin(),m=0;it_l!=h_set_l.end();it_l++,m++)
 					for(it_c=h_set_c.begin(),n=0;it_c!=h_set_c.end();it_c++,n++)
 					{
-						revindex_map_l[m]=it_l->get_index();
-						revindex_map_c[n]=it_c->get_index();
+						
+						revindex_map_l[m]=it_l->second.get_index();
+						revindex_map_c[n]=it_c->second.get_index();
 
-						float cost=chi_sq_test(*it_l,*it_c);
+						float cost=chi_sq_test(it_l->second,it_c->second);
 						cost_m.at<float>(m,n)=cost;
 						//cost_m.at<float>(n,m)=cost;
 						if(cost>inf)
@@ -1310,15 +1295,15 @@ namespace ats
 				int m=0;
 				int n=0;
 
-				list<hole>::iterator it_l;
-				list<hole>::iterator it_c;
+				map<int,hole>::iterator it_l;
+				map<int,hole>::iterator it_c;
 				for(it_l=h_set_l.begin(),m=0;it_l!=h_set_l.end();it_l++,m++)
 					for(it_c=h_set_c.begin(),n=0;it_c!=h_set_c.end();it_c++,n++)
 					{
-						revindex_map_l[m]=it_l->get_index();
-						revindex_map_c[n]=it_c->get_index();
+						revindex_map_l[m]=it_l->second.get_index();
+						revindex_map_c[n]=it_c->second.get_index();
 
-						float cost=chi_sq_test(*it_l,*it_c);
+						float cost=chi_sq_test(it_l->second,it_c->second);
 						cost_m.at<float>(m,n)=cost;
 						//cost_m.at<float>(n,m)=cost;
 						if(cost>inf)

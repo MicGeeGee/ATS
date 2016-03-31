@@ -25,7 +25,7 @@ namespace ats
 		int i=start_index;
 		while(true)
 		{
-
+			bool is_decreasing=false;
 			
 			if(i==start_index)
 			{
@@ -43,11 +43,18 @@ namespace ats
 
 			
 
-
 			if(pframe_l->get_index()==0)
 				pframe_l->detect_holes();
 
-			pframe_c->detect_holes(30);
+			pframe_c->detect_holes();
+
+			if(pframe_c->get_hole_num()<pframe_l->get_hole_num())
+			{
+				delete pframe_c;
+				continue;
+				//*pframe_c=ats_frame(*pframe_l);
+			}
+			
 
 			holes_matching::load_last_frame(pframe_l);
 			holes_matching::load_current_frame(pframe_c);
@@ -183,12 +190,12 @@ namespace ats
 
 int main()
 {
-	//ats::sing_img_process(202);
+	ats::sing_img_process_RBF(204);
 	
 	//ats::patch_process(1);
 
 	
-	ats::patch_process_RBF(1);
+	//ats::patch_process_RBF(1);
 	//ats::patch_process_LINEAR(1);
 	
 

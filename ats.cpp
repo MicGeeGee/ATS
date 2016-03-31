@@ -45,15 +45,19 @@ namespace ats
 
 	ats_frame::ats_frame(const ats_frame& frame): Mat(frame)
 	{
-
 		overlapping_num=frame.overlapping_num;
 
-		overlapping_list=frame.overlapping_list;
+
 		is_labeled=frame.is_labeled;
 		mid_dis=frame.mid_dis;
 		dis_mat=frame.dis_mat;
+
+
 		index_map=frame.index_map;
-		ptr_map=frame.ptr_map;
+		
+		
+
+		
 
 		index=frame.index;
 
@@ -63,7 +67,19 @@ namespace ats
 		grad_val=frame.grad_val;
 		grad_x=frame.grad_x;
 		grad_y=frame.grad_y;
+
+		hole_set=frame.hole_set;
+		
+
+
+		is_holes_detected=frame.is_holes_detected;
+
+
+
 	}
+	
+
+
 	int ats_frame::get_grad(int x,int y)const
 	{
 		return grad_val.at<short>(y,x);
@@ -244,15 +260,7 @@ namespace ats
 		return this->hole_set.size();
 	}
 
-	void ats_frame::enroll_overlapping(int index)
-	{
-		if(overlapping_list.find(index)==overlapping_list.end())
-			overlapping_list.insert(index);
 
-		overlapping_num++;
-		ptr_map[index]->enroll_overlapping();
-			
-	}
 
 	void ats_frame::set_overlapping_num(int n)
 	{
@@ -315,43 +323,44 @@ namespace ats
 				
 				
 			
-				list<hole>::iterator it;
-				vector<list<hole>::iterator> hole_container;
+				map<int,hole>::iterator it;
+				vector<int> hole_index_container;
 				bool is_new=true;
 			
 				//get all the holes at the same pos of the new detected hole
 				for(it=hole_set.begin();it!=hole_set.end();it++)
 				{
-					if(hole::same_pos(h,*it))
+					if(hole::same_pos(h,it->second))
 					{	
-						hole_container.push_back(it);
+						hole_index_container.push_back(it->first);
 						is_new=false;
 					}
 				}
 				//merge the holes together
-				if(hole_container.size()>1)
+				if(hole_index_container.size()>1)
 				{
-					for(int i=1;i<hole_container.size();i++)
+					for(int i=1;i<hole_index_container.size();i++)
 					{
-						if(hole_container[0]->assess_m_ft()<=hole_container[i]->assess_m_ft())
-							hole_set.erase(hole_container[i]);
+						if(hole_set[hole_index_container[0]].assess_m_ft()<=hole_set[hole_index_container[i]].assess_m_ft())
+							hole_set.erase(hole_index_container[i]);
 						else
 						{
-							hole_set.erase(hole_container[0]);
-							hole_container[0]=hole_container[i];
+							hole_set.erase(hole_index_container[0]);
+							hole_index_container[0]=hole_index_container[i];
 						}
 
 						//merge_holes(hole_container[0],hole_container[i]);
 					}
 						
 				}
-				if(hole_container.size()>0)
-					hole_container[0]->merge_spe(h);
-
-				if(is_new)
+				if(hole_index_container.size()>0)
 				{
-					hole_set.push_back(h);
+					hole_set[hole_index_container[0]].merge_spe(h);
 				}
+				if(is_new)
+					hole_set[h.get_index()]=h;
+					
+				
 
 
 				
@@ -409,9 +418,10 @@ namespace ats
 	{
 		FILE* fp;
 		fp=fopen(tar_path.c_str(),"w");
-		list<hole>::iterator it;
+		
+		map<int,hole>::iterator it;
 		for(it=hole_set.begin();it!=hole_set.end();it++)
-			fprintf(fp,"%d : %f %f %f %f label\n",it->get_index(),it->get_m_ft(1),it->get_m_ft(2),it->get_m_ft(3),it->get_m_ft(4));
+			fprintf(fp,"%d : %f %f %f %f label\n",it->second.get_index(),it->second.get_m_ft(1),it->second.get_m_ft(2),it->second.get_m_ft(3),it->second.get_m_ft(4));
 
 		fclose(fp);
 
@@ -441,9 +451,10 @@ namespace ats
 			return;
 		else
 		{
-			list<hole>::iterator it;
+
+			map<int,hole>::iterator it;
 			for(it=hole_set.begin();it!=hole_set.end();it++)
-				label_hole(*it,Scalar(0, 255, 0),it->get_index());
+				label_hole(it->second,Scalar(0, 255, 0),it->second.get_index());
 			
 			char label[20];
 			char label_gray[20];
@@ -464,7 +475,7 @@ namespace ats
 			return this->at<uchar>(p);
 	}
 
-	list<hole>& ats_frame::get_hole_set()
+	map<int,hole>& ats_frame::get_hole_set()
 	{
 		return hole_set;
 	}
@@ -473,8 +484,10 @@ namespace ats
 	{
 		//list<hole> h_set=hole_set;
 
-		list<hole>::iterator it1;
-		list<hole>::iterator it2;
+		
+
+		map<int,hole>::iterator it1;
+		map<int,hole>::iterator it2;
 
 
 
@@ -488,19 +501,16 @@ namespace ats
 				}
 				*/
 
-				if(it1->get_index()==12&&it2->get_index()==349)
-					cout<<15355<<endl;
-
-				if(it1->get_index()==it2->get_index())
+				if(it1->second.get_index()==it2->second.get_index())
 				{
 					it2++;
 					continue;
 				}
 				
-				if(!hole::same_pos(*it1,*it2))
+				if(!hole::same_pos(it1->second,it2->second))
 					it2++;
 				else
-					it2=merge_holes(it1,it2);
+					merge_holes(it1,it2);
 				
 				/*
 				if(calc_dis_sq(it1->get_gp(),it2->get_gp())>(it1->get_area()>it2->get_area()?it1->get_area():it2->get_area()))
@@ -520,19 +530,19 @@ namespace ats
 
 	float ats_frame::frag_assessment(hole& h1,hole& h2)
 	{
-		list<hole>& hole_set=this->get_hole_set();
-		list<hole>::iterator it;
+		map<int,hole>& hole_set=this->get_hole_set();
+		map<int,hole>::iterator it;
 
 		float theta_diff=0;
 		float rho_diff=0;
 
 		for(it=hole_set.begin();it!=hole_set.end();it++)
 		{
-			if(it->get_index()==h1.get_index()||it->get_index()==h2.get_index())
+			if(it->second.get_index()==h1.get_index()||it->second.get_index()==h2.get_index())
 				continue;
 			  
-			theta_diff+=std::abs(hole::shape_ft::calc_theta(h1.get_gp(),it->get_gp())-hole::shape_ft::calc_theta(h2.get_gp(),it->get_gp()))/3.14;
-			rho_diff+=std::abs(calc_dis(h1.get_gp(),it->get_gp())-calc_dis(h2.get_gp(),it->get_gp()))/(this->get_mid_dis()+0.0);
+			theta_diff+=std::abs(hole::shape_ft::calc_theta(h1.get_gp(),it->second.get_gp())-hole::shape_ft::calc_theta(h2.get_gp(),it->second.get_gp()))/3.14;
+			rho_diff+=std::abs(calc_dis(h1.get_gp(),it->second.get_gp())-calc_dis(h2.get_gp(),it->second.get_gp()))/(this->get_mid_dis()+0.0);
 			
 		}
 
@@ -558,26 +568,27 @@ namespace ats
 		mid_dis=0;
 		vector<int> dis_arr;
 		
-		list<hole>::iterator it1;
-		list<hole>::iterator it2;
+		
+		map<int,hole>::iterator it1;
+		map<int,hole>::iterator it2;
 
 
 		for(it1=hole_set.begin();it1!=hole_set.end();it1++)
 		{
-			ptr_map[it1->get_index()]=it1;
+			
 			for(it2=hole_set.begin();it2!=hole_set.end();it2++)
 			{
-				if(index_map.find(it1->get_index())==index_map.end())
-					index_map[it1->get_index()]=dis_mat_i++;
-				if(index_map.find(it2->get_index())==index_map.end())
-					index_map[it2->get_index()]=dis_mat_i++;
+				if(index_map.find(it1->second.get_index())==index_map.end())
+					index_map[it1->second.get_index()]=dis_mat_i++;
+				if(index_map.find(it2->second.get_index())==index_map.end())
+					index_map[it2->second.get_index()]=dis_mat_i++;
 					
-				int dis=calc_dis(it1->get_gp(),it2->get_gp());
+				int dis=calc_dis(it1->second.get_gp(),it2->second.get_gp());
 				dis_arr.push_back(dis);
 
 
 			
-				dis_mat.at<int>(index_map[it1->get_index()],index_map[it2->get_index()])=dis;
+				dis_mat.at<int>(index_map[it1->second.get_index()],index_map[it2->second.get_index()])=dis;
 					
 			}
 		}
@@ -595,17 +606,16 @@ namespace ats
 		return sqrt((a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y));
 	}
 
-	list<hole>::iterator ats_frame::merge_holes(list<hole>::iterator& p_host,list<hole>::iterator& p_guest)
+	void ats_frame::merge_holes(map<int,hole>::iterator& p_host,map<int,hole>::iterator& p_guest)
 	{
 		//make *p_guest incorprated into *p_host,and then erase p_guest
 
-		
-		p_host->incorporate(*p_guest);
-		return hole_set.erase(p_guest);
+		p_host->second.incorporate(p_guest->second);
+		hole_set.erase(p_guest++);
 	}
-	list<hole>::iterator ats_frame::get_hole(int index)
+	hole* ats_frame::get_hole(int index)
 	{
-		return ptr_map[index];
+		return &(hole_set[index]);
 	}
 
 	void ats_frame::morphology_filter(Mat& img,Mat& dst,int morph_operator,int morph_elem,int morph_size)
@@ -636,6 +646,13 @@ namespace ats
 		this->is_loaded=ft.is_loaded;
 		
 	}
+
+	hole::manual_ft::manual_ft()
+	{
+		is_loaded=false;
+	}
+
+
 	void hole::manual_ft::set_val(int dim_i,float val)
 	{
 		this->at<float>(0,dim_i-1)=val;
@@ -769,7 +786,7 @@ namespace ats
 
 	hole::hole(ats_frame& frame,const vector<Point>& contour):m_ft(frame),s_ft()
 	{
-		overlapping_num=0;
+
 
 		this->p_frame=&frame;
 		this->contour=contour;
@@ -792,9 +809,19 @@ namespace ats
 		area_cache=0;
 
 	} 
+	hole::hole()
+	{
+		index=generate_index();
+		body_brghtnss_mid=-1;
+		body_grad_mid=-1;
+
+		state=hole_state::nova;
+		area_cache=0;
+	}
+
 	hole::hole(const hole& h):m_ft(h.m_ft),s_ft(h.s_ft)
 	{
-		overlapping_num=h.overlapping_num;
+
 
 		gp=h.gp;
 		contour=h.contour;
@@ -815,6 +842,22 @@ namespace ats
 
 		area_cache=h.area_cache;
 	}
+
+	void hole::copy_from(const hole& h)
+	{
+		m_ft=h.m_ft;
+		s_ft=h.s_ft;
+		gp=h.gp;
+		contour=h.contour;
+		area=h.area;
+		p_frame=h.p_frame;
+		grad_mid=h.grad_mid;
+		con_grad_arr=h.con_grad_arr;
+		body_brghtnss_mid=h.body_brghtnss_mid;
+		body_grad_mid=h.body_grad_mid;
+		state=h.state;
+		area_cache=h.area_cache;
+	}
 	
 
 	void hole::merge_spe(hole& h)
@@ -822,7 +865,7 @@ namespace ats
 		if(h.area>this->area)
 		{
 			if(h.assess_m_ft()<=this->assess_m_ft())
-				*this=hole(h);
+				this->copy_from(h);
 			return;
 		}
 		/*
