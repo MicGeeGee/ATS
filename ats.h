@@ -545,20 +545,22 @@ namespace ats
 				gama=p.gama;
 			}
 		};
-
+		 
 		static vector<Mat> training_data;
 		
 		static vector<Mat> labels;
 		
 		static vector<Mat> test_data;
 		
-		static void load(const string& file_name)
+		static void load_LINEAR(const string& file_name)
 		{
 			classifier=Algorithm::load<ml::SVM>(file_name);
 			is_trained=true;
 		}
 
-		static void save(const string& file_name)
+		
+
+		static void save_LINEAR(const string& file_name)
 		{
 			if(is_trained)
 			{
@@ -572,6 +574,50 @@ namespace ats
 				cout<<"Error in saving: it has not been trained."<<endl;
 				return;
 			}
+		}
+
+		static void load_RBF(const string& file_name)
+		{
+			float C,gama;
+			Mat sample_mat,label_mat;
+			FileStorage fs(file_name,FileStorage::READ);
+
+			fs["C"]>>C;
+			fs["gama"]>>gama;
+			fs["traing_data"]>>sample_mat;
+			fs["labels"]>>label_mat;
+			
+			fs.release();
+			
+			train_RBF(sample_mat,label_mat,C,gama);
+		}
+
+		static void save_RBF(const string& file_name)
+		{
+			if(is_trained)
+			{
+		
+				
+				FileStorage fs(file_name,FileStorage::WRITE);
+				fs<<"C"<<classifier->getC();
+				fs<<"gama"<<classifier->getGamma();
+				
+				Mat dst_sample;
+				Mat dst_labels;
+				argument_convert(training_data,dst_sample);
+				argument_convert(labels,dst_labels);
+
+				fs<<"traing_data"<<dst_sample;
+				fs<<"labels"<<dst_labels;
+
+				fs.release();
+			}
+			else
+			{
+				cout<<"Error in saving: it has not been trained."<<endl;
+				return;
+			}
+
 		}
 		
 		
@@ -1012,7 +1058,6 @@ namespace ats
 			printf("#%d & #%d:\n",last_frame->get_index(),current_frame->get_index());
 			fprintf(fp,"#%d & #%d:\n",last_frame->get_index(),current_frame->get_index());
 			fclose(fp);
-
 
 			revindex_map_c.clear();
 			revindex_map_l.clear();
