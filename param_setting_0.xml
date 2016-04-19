@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<svm_file>svm_rbf_classifier_0.xml</svm_file>
+<rbf_or_linear>1</rbf_or_linear>
+<m_assess_thre>-1</m_assess_thre>
+<thre_min>50</thre_min>
+<thre_max>150</thre_max>
+<thre_delta>30</thre_delta>
+<patch_or_sing>1</patch_or_sing>
+<img_src_dir>G:\OPENCV_WORKSPACE\ATS_EXP_SRC\#0_normal_overlapping</img_src_dir>
+<img_dst_dir>G:\OPENCV_WORKSPACE\ATS_IMG_RESULT\#0</img_dst_dir>
+<txt_dst_dir>G:\OPENCV_WORKSPACE\ATS_IMG_RESULT\#0_file</txt_dst_dir>
+</opencv_storage>

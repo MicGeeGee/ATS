@@ -15,7 +15,121 @@ using namespace cv;
 
 namespace ats
 {
-	
+	class param_manager
+	{
+	public:
+		static void set_detection(const string& svm_classifier,bool rbf_linear,int m_thre)
+		{
+			svm_file=svm_classifier;
+			rbf_or_linear=rbf_linear;
+			m_assess_thre=m_thre;
+		}
+		static void set_thre(int min,int max,int delta)
+		{
+			thre_min=min;
+			thre_max=max;
+			thre_delta=delta;
+		}
+		static void set_process(bool p_or_s,const string& src_dir,const string& dst_dir,const string& txt_dir)
+		{
+			patch_or_sing=p_or_s;
+			img_src_dir=src_dir;
+			img_dst_dir=dst_dir;
+			txt_dst_dir=txt_dir;
+		}
+
+		static string get_svm_file()
+		{
+			return svm_file;
+		}
+		static bool get_rbf_or_linear()
+		{
+			return rbf_or_linear;
+		}
+		static int get_m_thre()
+		{
+			return m_assess_thre;
+		}
+		static int get_thre_min()
+		{
+			return thre_min;
+		}
+		static int get_thre_max()
+		{
+			return thre_max;
+		}
+		static int get_thre_delta()
+		{
+			return thre_delta;
+		}
+		static bool get_p_or_s()
+		{
+			return patch_or_sing;
+		}
+		static string get_src_dir()
+		{
+			return img_src_dir;
+		}
+		static string get_dst_dir()
+		{
+			return img_dst_dir;
+		}
+		static string get_txt_dir()
+		{
+			return txt_dst_dir;
+		}
+
+		static void save(const string& file_name="param_setting.xml")
+		{
+			FileStorage fs(file_name, FileStorage::WRITE);
+			fs<<"svm_file"<<svm_file;
+			fs<<"rbf_or_linear"<<rbf_or_linear;
+			fs<<"m_assess_thre"<<m_assess_thre;
+			fs<<"thre_min"<<thre_min;
+			fs<<"thre_max"<<thre_max;
+			fs<<"thre_delta"<<thre_delta;
+			fs<<"patch_or_sing"<<patch_or_sing;
+			fs<<"img_src_dir"<<img_src_dir;
+			fs<<"img_dst_dir"<<img_dst_dir;
+			fs<<"txt_dst_dir"<<txt_dst_dir;
+
+			fs.release();
+		}
+		static void load(const string& file_name="param_setting.xml")
+		{
+			FileStorage fs(file_name, FileStorage::READ);
+			fs["svm_file"]>>svm_file;
+			fs["rbf_or_linear"]>>rbf_or_linear;
+			fs["m_assess_thre"]>>m_assess_thre;
+			fs["thre_min"]>>thre_min;
+			fs["thre_max"]>>thre_max;
+			fs["thre_delta"]>>thre_delta;
+			fs["patch_or_sing"]>>patch_or_sing;
+			fs["img_src_dir"]>>img_src_dir;
+			fs["img_dst_dir"]>>img_dst_dir;
+			fs["txt_dst_dir"]>>txt_dst_dir;
+			fs.release();
+		}
+
+	private:
+		
+		static string svm_file;
+		static bool rbf_or_linear;//true for rbf.
+		static int m_assess_thre;//If it is set to value<0, then choose to use svm.
+		
+		static int thre_min;//If thre_min==thre_max, then only do single threshold detection.
+		static int thre_max;//If it is set to value<0, then choose the default param(mean brightness).
+		static int thre_delta;
+		
+		static bool patch_or_sing;//If patch_or_sing=1,then img_src_dir and img_dst_dir point to file path;
+		static string img_src_dir;
+		static string img_dst_dir;//Point out the root directroy.
+		static string txt_dst_dir;//Should be pointed out the directory, specifically up to file name.
+		
+		
+	};
+
+
 	class hole;
 	
 	
@@ -49,7 +163,7 @@ namespace ats
 		void save_g(const string& tar_path);
 		void save_hole_set(const string& tar_path);
 
-		void detect_holes(int thre_min,int delta);
+		void detect_holes();
 
 		int get_grad(int x,int y)const;
 		int get_grad(const Point& pos)const;
@@ -556,75 +670,16 @@ namespace ats
 		static vector<Mat> labels;
 		
 		static vector<Mat> test_data;
-		
-		static void load_LINEAR(const string& file_name)
+
+		static void load()
 		{
-			classifier=Algorithm::load<ml::SVM>(file_name);
-			is_trained=true;
-		}
-
-		
-
-		static void save_LINEAR(const string& file_name)
-		{
-			if(is_trained)
-			{
-				classifier->save(file_name);
-
-				
-				
-			}
+			if(param_manager::get_rbf_or_linear())
+				load_RBF(param_manager::get_svm_file());
 			else
-			{
-				cout<<"Error in saving: it has not been trained."<<endl;
-				return;
-			}
-		}
-
-		static void load_RBF(const string& file_name)
-		{
-			float C,gama;
-			Mat sample_mat,label_mat;
-			FileStorage fs(file_name,FileStorage::READ);
-
-			fs["C"]>>C;
-			fs["gama"]>>gama;
-			fs["traing_data"]>>sample_mat;
-			fs["labels"]>>label_mat;
-			
-			fs.release();
-			
-			train_RBF(sample_mat,label_mat,C,gama);
-		}
-
-		static void save_RBF(const string& file_name)
-		{
-			if(is_trained)
-			{
-		
-				
-				FileStorage fs(file_name,FileStorage::WRITE);
-				fs<<"C"<<classifier->getC();
-				fs<<"gama"<<classifier->getGamma();
-				
-				Mat dst_sample;
-				Mat dst_labels;
-				argument_convert(training_data,dst_sample);
-				argument_convert(labels,dst_labels);
-
-				fs<<"traing_data"<<dst_sample;
-				fs<<"labels"<<dst_labels;
-
-				fs.release();
-			}
-			else
-			{
-				cout<<"Error in saving: it has not been trained."<<endl;
-				return;
-			}
-
+				load_LINEAR(param_manager::get_svm_file());
 		}
 		
+	
 		
 
 		static void load_data(const string& file_name)
@@ -1029,6 +1084,75 @@ namespace ats
 		}
 
 
+		static void load_LINEAR(const string& file_name)
+		{
+			classifier=Algorithm::load<ml::SVM>(file_name);
+			is_trained=true;
+		}
+
+		
+
+		static void save_LINEAR(const string& file_name)
+		{
+			if(is_trained)
+			{
+				classifier->save(file_name);
+
+				
+				
+			}
+			else
+			{
+				cout<<"Error in saving: it has not been trained."<<endl;
+				return;
+			}
+		}
+
+		static void load_RBF(const string& file_name)
+		{
+			float C,gama;
+			Mat sample_mat,label_mat;
+			FileStorage fs(file_name,FileStorage::READ);
+
+			fs["C"]>>C;
+			fs["gama"]>>gama;
+			fs["traing_data"]>>sample_mat;
+			fs["labels"]>>label_mat;
+			
+			fs.release();
+			
+			train_RBF(sample_mat,label_mat,C,gama);
+		}
+
+		static void save_RBF(const string& file_name)
+		{
+			if(is_trained)
+			{
+		
+				
+				FileStorage fs(file_name,FileStorage::WRITE);
+				fs<<"C"<<classifier->getC();
+				fs<<"gama"<<classifier->getGamma();
+				
+				Mat dst_sample;
+				Mat dst_labels;
+				argument_convert(training_data,dst_sample);
+				argument_convert(labels,dst_labels);
+
+				fs<<"traing_data"<<dst_sample;
+				fs<<"labels"<<dst_labels;
+
+				fs.release();
+			}
+			else
+			{
+				cout<<"Error in saving: it has not been trained."<<endl;
+				return;
+			}
+
+		}
+		
+
 
 		
 		
@@ -1039,12 +1163,14 @@ namespace ats
 	class holes_matching
 	{
 	public:
-		static void load_file_path()
+		static void load_file_path(const string& dir)
 		{
 			char str[1000];
-			sprintf(str,"G:\\OPENCV_WORKSPACE\\ATS_IMG_RESULT\\#1_file\\record_%d.txt",time((time_t*)NULL));
+			sprintf(str,"\\record_%d.txt",time((time_t*)NULL));
+			
+			//sprintf(str,"G:\\OPENCV_WORKSPACE\\ATS_IMG_RESULT\\#1_file\\record_%d.txt",time((time_t*)NULL));
 				
-			file_path=string(str);
+			file_path=string(dir+str);
 			
 		}
 		static void load_last_frame(ats_frame* p_frame)
@@ -1118,7 +1244,7 @@ namespace ats
 			//if the hole num has decreased, is_successfull will be set to false;
 		    bool is_successfull=calc_cost_m();
 			
-			cout<<cost_m<<endl;
+			//cout<<cost_m<<endl;
 
 			float res=munkres(cost_m,assign_arr);
 			

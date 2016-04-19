@@ -31,6 +31,7 @@ namespace ats
 
 		origin_img=imread(img_path);
 		calc_gradient(*this,grad_val,grad_x,grad_y);
+
 		calc_mid_brgtnss();
 		is_holes_detected=false;
 	}
@@ -270,7 +271,7 @@ namespace ats
 	
 
 
-	void ats_frame::detect_holes(int thre_min,int delta)
+	void ats_frame::detect_holes()
 	{
 
 		hole::index_generator_clear();//for different frames
@@ -279,7 +280,17 @@ namespace ats
 		//this->morphology_filter(*this,*this,0,2,3);
 		
 		//for(int i=thre_min;i<=((mid_brgtnss+60)>255?255:(mid_brgtnss+30));i+=30)
-		for(int i=thre_min;i<=150;i+=delta)
+
+		int thre_min=param_manager::get_thre_min();
+		int thre_max=param_manager::get_thre_max();
+		int thre_delta=param_manager::get_thre_delta();
+		int m_thre=param_manager::get_m_thre();
+		bool svm_or_m=m_thre<0?true:false;
+
+		if(param_manager::get_thre_max()<0)
+			thre_max=mid_brgtnss;
+
+		for(int i=thre_min;i<=thre_max;i+=thre_delta)
 		{
 			Mat thre_img;
 			vector<vector<Point> > contour_container;
@@ -309,7 +320,11 @@ namespace ats
 					//continue;
 				//if(h.get_m_ft(3)>0.2)
 					//continue;
-				if(ats::ats_svm::predict(h.get_m_ft())==-1)
+
+				if(h.assess_m_ft()>m_thre && !svm_or_m)
+					continue;
+
+				if(ats::ats_svm::predict(h.get_m_ft())==-1 && svm_or_m)
 					continue;
 				
 				
@@ -944,5 +959,20 @@ namespace ats
 	string holes_matching::file_path;
 	int holes_matching::overlapping_num=0;
 
+
+	string param_manager::svm_file;
+	int param_manager::m_assess_thre;//If it is set to value<0, then choose to use svm.
+	bool param_manager::rbf_or_linear;	
+
+	int param_manager::thre_min;
+	int param_manager::thre_max;//If it is set to value<0, then choose the default param(mean brightness).
+	int param_manager::thre_delta;//If it is set to value<0, then only do single threshold(using thre_min) detection.
+		
+
+	bool param_manager::patch_or_sing;//If patch_or_sing=1,then img_src_dir and img_dst_dir point to file path;
+	string param_manager::img_src_dir;
+	string param_manager::img_dst_dir;//Point out the root directroy.
+	string param_manager::txt_dst_dir;//Should be pointed out the directory, specifically up to file name.
+		
 
 }
